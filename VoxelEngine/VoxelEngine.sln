@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VoxelEngine", "VoxelEngine\VoxelEngine.vcxproj", "{6B9131F6-226A-46CA-B646-2CB1FA734632}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Debug|x64.ActiveCfg = Debug|x64
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Debug|x64.Build.0 = Debug|x64
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Debug|x86.ActiveCfg = Debug|Win32
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Debug|x86.Build.0 = Debug|Win32
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Release|x64.ActiveCfg = Release|x64
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Release|x64.Build.0 = Release|x64
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Release|x86.ActiveCfg = Release|Win32
+		{6B9131F6-226A-46CA-B646-2CB1FA734632}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4B7DE5B7-AB67-4BA2-8772-8E09C1BE4A53}
+	EndGlobalSection
+EndGlobal
