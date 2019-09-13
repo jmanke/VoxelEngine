@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Jobs;
 
-namespace Toast.Voxels
+namespace Toast.Voxels.Old
 {
     public class VoxelObject
     {
@@ -46,14 +47,14 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < dimZ; z++)
                     {
-                        blocks[CoordToIndex(x, y, z)] = new Block(x, y, z, 0, size);
+                        blocks[BlockCoordToIndex(x, y, z)] = new Block(x, y, z, 0, size);
                     }
                 }
             }
 
             fastNoise = new FastNoiseSIMD();
-            fastNoise.SetFrequency(0.05f);
-            fastNoise.SetFractalGain(1.0f);
+            //fastNoise.SetFrequency(1f);
+            //fastNoise.SetFractalGain(0.5f);
         }
 
         public void GenerateIsovalues()
@@ -78,7 +79,33 @@ namespace Toast.Voxels
             Debug.Log("Filled");
         }
 
-        public int CoordToIndex(int x, int y, int z)
+        public static sbyte[] GetIsoValues(int i, int j, int k)
+        {
+            var fastNoise = new FastNoiseSIMD();
+            //fastNoise.SetFrequency(0.05f);
+            //fastNoise.SetFractalGain(1.0f);
+
+            float[] noiseSet = fastNoise.GetNoiseSet(0, 0, 0, i, j, k);
+            var isovalues = new sbyte[i * j * k];
+            int index = 0;
+
+            for (int x = 0; x < i; x++)
+            {
+                for (int y = 0; y < j; y++)
+                {
+                    for (int z = 0; z < k; z++)
+                    {
+                        // Pseudo function to process data in noise set
+                        //ProcessVoxelData(x, y, z, noiseSet[index++]);
+                        isovalues[x + y * i + z * j * j] = (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
+                    }
+                }
+            }
+
+            return isovalues;
+        }
+
+        public int BlockCoordToIndex(int x, int y, int z)
         {
             return x + y * dimX + z * dimY * dimY;
         }
@@ -198,7 +225,7 @@ namespace Toast.Voxels
                             if (createVertex)
                             {
                                 long u = 0x0100 - t;
-                                Q = (t * p0 + u * p1) / 256.0f;
+                                Q = (p0 * t + p1 * u) / 256.0f;
 
                                 // only add the maximal edges
                                 if ((direction & 0x8) != 0)
@@ -235,9 +262,13 @@ namespace Toast.Voxels
                 }
             }
 
-            mesh.vertices = vertices.Take(vertInd).ToArray();
-            mesh.triangles = triangles.Take(triInd).ToArray();
-            mesh.normals = normals.Take(vertInd).ToArray();
+            System.Array.Resize(ref triangles, triInd);
+            System.Array.Resize(ref vertices, vertInd);
+            System.Array.Resize(ref normals, vertInd);
+
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.normals = normals;
 
             return mesh;
         }
@@ -248,7 +279,7 @@ namespace Toast.Voxels
                                 IsovalueAt(block, coord + UNIT_Z) - IsovalueAt(block, coord - UNIT_Z) * 0.5f);
 }
 
-    private Cell MakeCell(Block block, Vector3 coord)
+        private Cell MakeCell(Block block, Vector3 coord)
         {
             var cell = new Cell(new sbyte[8]
             {   IsovalueAt(block, Cell.GetCornerCoord(block.spacing, coord, 0)),

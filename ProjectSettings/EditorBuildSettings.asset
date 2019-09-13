@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/VoxelEngine/VoxelEngineSample.unity
+    guid: fee6be36351b8ce499b08e0545f91313
   m_configObjects: {}

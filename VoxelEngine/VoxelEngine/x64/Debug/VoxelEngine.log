@@ -1,3 +1,13 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(377,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
   VoxelObject.cpp
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(41): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(42): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(43): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(44): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(45): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(46): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(47): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(48): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(107): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
+e:\unity\voxelengine\voxelengine\voxelengine\voxelobject.cpp(108): warning C4244: 'argument': conversion from 'const int' to 'const float', possible loss of data
   VoxelEngine.vcxproj -> E:\unity\VoxelEngine\VoxelEngine\VoxelEngine\..\..\Assets\VoxelEngine\Plugins\VoxelEngine.dll

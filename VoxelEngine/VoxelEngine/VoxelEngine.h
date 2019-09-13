@@ -10,6 +10,6 @@ extern "C" {
 	//! Destructor
 	LIBRARY_EXPORT  void delete_VoxelObject(VoxelObject* instance);
 
-	//! Destructor
-	LIBRARY_EXPORT  void FillIsoValues(VoxelObject* instance, char isovalues[]);
+	//! Computes mesh
+	LIBRARY_EXPORT void ComputeMesh(VoxelObject* instance, char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, glm::vec3* normals);
 }

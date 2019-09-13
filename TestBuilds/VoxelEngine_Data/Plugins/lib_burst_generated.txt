@@ -1,0 +1,14 @@
+--platform=Windows
+--backend=burst-llvm
+--target=X64_SSE4
+--noalias
+--dump=Function
+--float-precision=Standard
+--format=Coff
+--output=E:\unity\VoxelEngine\Temp\StagingArea\Data\Plugins\lib_burst_generated
+--root-assembly=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\Unity.TextMeshPro.dll
+--root-assembly=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
+--root-assembly=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\Unity.Mathematics.dll
+--root-assembly=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\Unity.Analytics.DataPrivacy.dll
+--root-assembly=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\Unity.Burst.dll
+--assembly-folder=E:\unity\VoxelEngine\Temp\StagingArea\Data\Managed\

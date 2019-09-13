@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Toast.Voxels
+namespace Toast.Voxels.Old
 {
-    public class Block
+    public struct Block
     {
         public int x;
         public int y;

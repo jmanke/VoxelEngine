@@ -5,15 +5,18 @@ using System.Runtime.InteropServices;
 
 namespace Toast.Voxels
 {
-    public class VoxelEngineWrapper
+    public unsafe class VoxelEngineWrapper
     {
         const string NATIVE_LIB = "VoxelEngine";
 
-        [DllImport(NATIVE_LIB)]
+        [DllImport(NATIVE_LIB, CallingConvention = CallingConvention.StdCall)]
         public static extern System.IntPtr new_VoxelObject();
 
-        [DllImport(NATIVE_LIB)]
-        public static extern void delete_TransVoxelImpl(System.IntPtr instance);
+        [DllImport(NATIVE_LIB, CallingConvention = CallingConvention.StdCall)]
+        public static extern void delete_VoxelObject(System.IntPtr instance);
+
+        [DllImport(NATIVE_LIB, CallingConvention = CallingConvention.StdCall)]
+        public static extern void ComputeMesh(System.IntPtr instance, sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals);
 
         private readonly System.IntPtr instance;
 
@@ -22,9 +25,14 @@ namespace Toast.Voxels
             this.instance = new_VoxelObject();
         }
 
-        ~VoxelEngineWrapper()
+        public unsafe void ComputeMesh(sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals)
         {
-            delete_TransVoxelImpl(instance);
+            ComputeMesh(instance, isovalues, blockSize, lod, vertices, vertexCount, triangles, triangleCount, normals);
+        }
+
+        public void Delete()
+        {
+            delete_VoxelObject(instance);
         }
     }
 }

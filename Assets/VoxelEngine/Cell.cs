@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Toast.Voxels
 {
-    public class Cell
+    public struct Cell
     {
         public sbyte[] corner;
         Vector3 coord;

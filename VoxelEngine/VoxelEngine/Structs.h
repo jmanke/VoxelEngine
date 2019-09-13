@@ -3,20 +3,23 @@
 #include <vector>
 #include <string>
 
-static const glm::vec3 cornerPositions[8] = {
-	glm::vec3(0,0,0),
-	glm::vec3(1,0,0),
-	glm::vec3(0,1,0),
-	glm::vec3(1,1,0),
-	glm::vec3(0,0,1),
-	glm::vec3(1,0,1),
-	glm::vec3(0,1,1),
-	glm::vec3(1,1,1)
+typedef glm::vec3 Coord;
+
+static const Coord cornerPositions[8] = {
+	Coord{0,0,0},
+	Coord{1,0,0},
+	Coord{0,1,0},
+	Coord{1,1,0},
+	Coord{0,0,1},
+	Coord{1,0,1},
+	Coord{0,1,1},
+	Coord{1,1,1}
 };
+
 
 struct Cell {
 	char corner[8];
-	glm::vec3 localPosition;
+	//glm::vec3 localPosition;
 	// point to vertex position in array
 	int reuseVertexIndicies[4];
 
@@ -31,33 +34,33 @@ struct Cell {
 			| (corner[7] & 0x80);
 	}
 
-	static glm::vec3 getCornerCoord(const float& spacing, const glm::vec3& localCoord, const char& cornerInd) {
+	static Coord getCornerCoord(const float spacing, const Coord& localCoord, const char cornerInd) {
 		return (localCoord + cornerPositions[cornerInd]) * spacing;
 	}
 };
 
-struct Block
-{
-	int x;
-	int y;
-	int z;
-	int lod;
-	float spacing;
-	int size;
-	std::vector<Cell> cellBuffer;
-
-	static std::string generateId(int x, int y, int z, int depth) {
-		return std::string(std::to_string(x) + '_' + std::to_string(y) + '_' + std::to_string(z) + '_' + std::to_string(depth));
-	}
-
-	static glm::vec3 blockGlobalCoord(const Block& block) {
-		return glm::vec3(block.x, +block.y, +block.z) * (float)block.size;
-	}
-
-	static int cellInd(int x, int y, int z, int size) {
-		return x + y * size + z * size * size;
-	}
-};
+//struct Block
+//{
+//	int x;
+//	int y;
+//	int z;
+//	int lod;
+//	float spacing;
+//	int size;
+//	std::vector<Cell> cellBuffer;
+//
+//	static std::string generateId(int x, int y, int z, int depth) {
+//		return std::string(std::to_string(x) + '_' + std::to_string(y) + '_' + std::to_string(z) + '_' + std::to_string(depth));
+//	}
+//
+//	static glm::vec3 blockGlobalCoord(const Block& block) {
+//		return glm::vec3(block.x, +block.y, +block.z) * (float)block.size;
+//	}
+//
+//	static int cellInd(int x, int y, int z, int size) {
+//		return x + y * size + z * size * size;
+//	}
+//};
 
 struct Mesh {
 	int vertInd;
