@@ -145,7 +145,7 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 							cell.reuseVertexIndicies[vIndexInCell] = mesh.vertInd;
 
 						triangleVertexIndex[vertexIndex] = mesh.vertInd;
-						mesh.normals[mesh.vertInd] = CalcNormal(localCoord, grid);
+						mesh.normals[mesh.vertInd] = CalcNormal(Q, grid);
 						mesh.verticies[mesh.vertInd] = Q;
 						mesh.vertInd++;
 					}

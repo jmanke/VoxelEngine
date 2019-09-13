@@ -17,20 +17,23 @@ namespace Toast.Voxels
 
         public void Start()
         {
-            voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize);
-            voxelObject.GenerateIsovalues();
-
-            System.Threading.Tasks.Parallel.For(0, voxelObject.dimX, x =>
+            System.Threading.ThreadPool.QueueUserWorkItem(o =>
             {
-                for (int y = 0; y < voxelObject.dimY; y++)
+                voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize);
+                voxelObject.GenerateIsovalues();
+
+                System.Threading.Tasks.Parallel.For(0, voxelObject.dimX, x =>
                 {
-                    for (int z = 0; z < voxelObject.dimZ; z++)
+                    for (int y = 0; y < voxelObject.dimY; y++)
                     {
-                        var block = voxelObject.blocks[x + y * dim.x + z * dim.y * dim.y];
-                        var voxelMesh = voxelObject.ComputeMesh(block);
-                        meshToRender.Enqueue(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
+                        for (int z = 0; z < voxelObject.dimZ; z++)
+                        {
+                            var block = voxelObject.blocks[x + y * dim.x + z * dim.y * dim.y];
+                            var voxelMesh = voxelObject.ComputeMesh(block);
+                            meshToRender.Enqueue(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
+                        }
                     }
-                }
+                });
             });
 
             //var voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize);
@@ -72,7 +75,7 @@ namespace Toast.Voxels
                     mesh.triangles = voxelMesh.triangles;
                     mesh.normals = voxelMesh.normals;
 
-                    mesh.RecalculateNormals();
+                    //mesh.RecalculateNormals();
 
                     mf.mesh = mesh;
                 }
