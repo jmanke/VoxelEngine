@@ -5,8 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Toast.Voxels
 {
-    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public class VoxelObject : System.Attribute
+    public class VoxelObject
     {
         public readonly Block[] blocks;
 
@@ -24,6 +23,8 @@ namespace Toast.Voxels
         private VoxelEngineWrapper voxelObjWrapper;
         private FastNoiseSIMD fastNoise;
 
+        public Transform root;
+
         public VoxelObject(int dimX, int dimY, int dimZ, int blockSize)
         {
             this.voxelObjWrapper = new VoxelEngineWrapper();
@@ -40,6 +41,10 @@ namespace Toast.Voxels
             this.isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
             this.blocks = new Block[dimX * dimY * dimZ];
 
+            root = new GameObject("Voxel Object").transform;
+            root.position = Vector3.zero;
+            root.rotation = Quaternion.identity;
+
             for (int x = 0; x < dimX; x++)
             {
                 for (int y = 0; y < dimY; y++)
@@ -52,18 +57,14 @@ namespace Toast.Voxels
             }
 
             fastNoise = new FastNoiseSIMD();
-            //fastNoise.SetFrequency(0.5f);
-            //fastNoise.SetFractalGain(0.5f);
+            fastNoise.SetFrequency(0.02f);
         }
 
-        public void Delete()
-        {
-            voxelObjWrapper.Delete();
-        }
-
+        /// <summary>
+        /// TODO: generate noise somewhere else
+        /// </summary>
         public void GenerateIsovalues()
         {
-            // Get a set of 16 x 16 x 16 Simplex Fractal noise
             float[] noiseSet = fastNoise.GetNoiseSet(0, 0, 0, isoDimX, isoDimY, isoDimZ);
             int index = 0;
 
@@ -73,7 +74,7 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
+                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = (sbyte)(noiseSet[index++] * 128f); // (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
                     }
                 }
             }
@@ -110,7 +111,7 @@ namespace Toast.Voxels
             }
         }
 
-        public unsafe VoxelMesh ComputeMesh(Block block)
+        public VoxelMesh ComputeMesh(Block block)
         {
             int numVoxels = blockSize * blockSize * blockSize;
             int maxTriCount = numVoxels * 5;

@@ -138,8 +138,6 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 						long u = 0x0100 - t;
 						Q = ((float)t * p0 + (float)u * p1) / 256.0f;
 
-						// Need to check if vertex is on the edge of a boundary
-
 						// only add the maximal edges
 						if (direction & 0x8)
 							cell.reuseVertexIndicies[vIndexInCell] = mesh.vertInd;

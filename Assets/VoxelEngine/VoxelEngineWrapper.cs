@@ -25,12 +25,12 @@ namespace Toast.Voxels
             this.instance = new_VoxelObject();
         }
 
-        public unsafe void ComputeMesh(sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals)
+        public void ComputeMesh(sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals)
         {
             ComputeMesh(instance, isovalues, blockSize, lod, vertices, vertexCount, triangles, triangleCount, normals);
         }
 
-        public void Delete()
+        ~VoxelEngineWrapper()
         {
             delete_VoxelObject(instance);
         }
