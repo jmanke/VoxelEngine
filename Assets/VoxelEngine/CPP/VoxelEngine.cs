@@ -66,7 +66,7 @@ namespace Toast.Voxels
             renderGroup.numBlocks = updateBlocks.Count;
             renderGroups.Add(renderGroup);
 
-            if (updateBlocks.Count > 4)
+            if (updateBlocks.Count > 1)
             {
                 var blocksToUpdate = new Block[updateBlocks.Count];
                 int i = 0;
