@@ -139,37 +139,6 @@ namespace Toast.Voxels
                     renderGroups.RemoveAt(i);
                 }
             }
-
-            //for (int i = 0; i < renderMesh.Count && i < 8; i++)
-            //{
-            //    if (renderMesh.TryDequeue(out var res))
-            //    {
-            //        var block = res.Item1;
-            //        var voxelMesh = res.Item2;
-            //        var voxelObject = block.voxelObject;
-
-            //        if (block.go == null)
-            //        {
-            //            block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
-            //            block.go.transform.SetParent(voxelObject.root);
-            //            block.go.transform.position = new Vector3(block.x, block.y, block.z) * block.size;
-
-            //            block.renderer = block.go.AddComponent<MeshRenderer>();
-            //            block.renderer.material = mat;
-
-            //            block.meshFilter = block.go.AddComponent<MeshFilter>();
-            //        }
-
-            //        var mesh = new Mesh();
-            //        mesh.vertices = voxelMesh.vertices;
-            //        mesh.triangles = voxelMesh.triangles;
-            //        mesh.normals = voxelMesh.normals;
-
-            //        block.meshFilter.sharedMesh = mesh;
-
-            //        generateCollider.Enqueue(block);
-            //    }
-            //}
         }
 
         private void GenerateColliders()
