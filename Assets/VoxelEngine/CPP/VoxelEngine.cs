@@ -11,87 +11,192 @@ namespace Toast.Voxels
         public int blockSize;
         public Material mat;
 
-        private ConcurrentQueue<System.Tuple<Block, VoxelMesh, VoxelObject>> renderMesh = new ConcurrentQueue<System.Tuple<Block, VoxelMesh, VoxelObject>>();
+        /// <summary>
+        /// Queue to update blocks
+        /// </summary>
+        private HashSet<Block> updateBlocks = new HashSet<Block>();
 
+        /// <summary>
+        /// queue for rendering meshes on a block
+        /// </summary>
+        //private ConcurrentQueue<System.Tuple<Block, VoxelMesh>> renderMesh = new ConcurrentQueue<System.Tuple<Block, VoxelMesh>>();
+
+        private List<RenderGroup> renderGroups = new List<RenderGroup>();
+
+        /// <summary>
+        /// Queue for generating colliders on a block
+        /// </summary>
         private Queue<Block> generateCollider = new Queue<Block>();
 
         private VoxelObject voxelObject;
 
+        private class RenderGroup
+        {
+            public int numBlocks;
+            public ConcurrentBag<System.Tuple<Block, VoxelMesh>> completedBlocks = new ConcurrentBag<System.Tuple<Block, VoxelMesh>>();
+        }
+
         public void Start()
         {
-            voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize);
+            voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize, this);
 
             System.Threading.ThreadPool.QueueUserWorkItem(o =>
             {
                 voxelObject.GenerateIsovalues();
 
-                System.Threading.Tasks.Parallel.For(0, voxelObject.dimX, x =>
+                foreach (var block in voxelObject.blocks)
                 {
-                    for (int y = 0; y < voxelObject.dimY; y++)
+                    updateBlocks.Add(block);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Update the given block
+        /// </summary>
+        /// <param name="block"></param>
+        public void UpdateBlock(Block block)
+        {
+            updateBlocks.Add(block);
+        }
+
+        private void QueueRenderMeshes()
+        {
+            var renderGroup = new RenderGroup();
+            renderGroup.numBlocks = updateBlocks.Count;
+            renderGroups.Add(renderGroup);
+
+            if (updateBlocks.Count > 4)
+            {
+                var blocksToUpdate = new Block[updateBlocks.Count];
+                int i = 0;
+
+                foreach (var block in updateBlocks)
+                {
+                    blocksToUpdate[i] = block;
+                    i++;
+                }
+
+                updateBlocks.Clear();
+
+                System.Threading.ThreadPool.QueueUserWorkItem(o =>
+                {
+                    foreach (var block in blocksToUpdate)
                     {
-                        for (int z = 0; z < voxelObject.dimZ; z++)
-                        {
-                            var block = voxelObject.blocks[x + y * dim.x + z * dim.y * dim.y];
-                            var voxelMesh = voxelObject.ComputeMesh(block);
-                            renderMesh.Enqueue(new System.Tuple<Block, VoxelMesh, VoxelObject>(block, voxelMesh, voxelObject));
-                        }
+                        var voxelMesh = block.voxelObject.ComputeMesh(block);
+                        renderGroup.completedBlocks.Add(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
                     }
                 });
-            });
+            }
+            else
+            {
+                foreach (var block in updateBlocks)
+                {
+                    var voxelMesh = block.voxelObject.ComputeMesh(block);
+                    renderGroup.completedBlocks.Add(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
+                }
+
+                updateBlocks.Clear();
+            }
         }
 
         private void RenderMeshes()
         {
-            for (int i = 0; i < renderMesh.Count && i < 8; i++)
+            for (int i = renderGroups.Count - 1; i >= 0; i--)
             {
-                System.Tuple<Block, VoxelMesh, VoxelObject> res;
-
-                if (renderMesh.TryDequeue(out res))
+                var renderGroup = renderGroups[i];
+                // none are incomplete, render the group
+                if (renderGroup.completedBlocks.Count == renderGroup.numBlocks)
                 {
-                    var block = res.Item1;
-                    var voxelMesh = res.Item2;
-                    var voxelObject = res.Item3;
-
-                    if (block.go == null)
+                    foreach (var res in renderGroup.completedBlocks)
                     {
-                        block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
-                        block.go.transform.SetParent(voxelObject.root);
-                        block.go.transform.position = new Vector3(block.x, block.y, block.z) * block.size;
+                        var block = res.Item1;
+                        var voxelMesh = res.Item2;
+                        var voxelObject = block.voxelObject;
 
-                        block.renderer = block.go.AddComponent<MeshRenderer>();
-                        block.renderer.material = mat;
+                        if (block.go == null)
+                        {
+                            block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
+                            block.go.transform.SetParent(voxelObject.root);
+                            block.go.transform.position = new Vector3(block.x, block.y, block.z) * block.size;
 
-                        block.meshFilter = block.go.AddComponent<MeshFilter>();
+                            block.renderer = block.go.AddComponent<MeshRenderer>();
+                            block.renderer.material = mat;
+
+                            block.meshFilter = block.go.AddComponent<MeshFilter>();
+                        }
+
+                        var mesh = new Mesh();
+                        mesh.vertices = voxelMesh.vertices;
+                        mesh.triangles = voxelMesh.triangles;
+                        mesh.normals = voxelMesh.normals;
+
+                        block.meshFilter.sharedMesh = mesh;
+
+                        generateCollider.Enqueue(block);
                     }
 
-                    var mesh = new Mesh();
-                    mesh.vertices = voxelMesh.vertices;
-                    mesh.triangles = voxelMesh.triangles;
-                    mesh.normals = voxelMesh.normals;
-
-                    block.meshFilter.sharedMesh = mesh;
-
-                    generateCollider.Enqueue(block);
+                    renderGroups.RemoveAt(i);
                 }
             }
+
+            //for (int i = 0; i < renderMesh.Count && i < 8; i++)
+            //{
+            //    if (renderMesh.TryDequeue(out var res))
+            //    {
+            //        var block = res.Item1;
+            //        var voxelMesh = res.Item2;
+            //        var voxelObject = block.voxelObject;
+
+            //        if (block.go == null)
+            //        {
+            //            block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
+            //            block.go.transform.SetParent(voxelObject.root);
+            //            block.go.transform.position = new Vector3(block.x, block.y, block.z) * block.size;
+
+            //            block.renderer = block.go.AddComponent<MeshRenderer>();
+            //            block.renderer.material = mat;
+
+            //            block.meshFilter = block.go.AddComponent<MeshFilter>();
+            //        }
+
+            //        var mesh = new Mesh();
+            //        mesh.vertices = voxelMesh.vertices;
+            //        mesh.triangles = voxelMesh.triangles;
+            //        mesh.normals = voxelMesh.normals;
+
+            //        block.meshFilter.sharedMesh = mesh;
+
+            //        generateCollider.Enqueue(block);
+            //    }
+            //}
         }
 
         private void GenerateColliders()
         {
-            for (int i = 0; i < generateCollider.Count && i < 1; i++)
+            for (int i = 0; i < generateCollider.Count && i < 2; i++)
             {
+
+                Debug.Log("Generate collider");
                 var block = generateCollider.Dequeue();
 
                 if (block.collider == null)
+                {
                     block.collider = block.go.AddComponent<MeshCollider>();
-                else
                     block.collider.sharedMesh = block.meshFilter.sharedMesh;
+                }
+                else
+                {
+                    block.collider.sharedMesh = block.meshFilter.sharedMesh;
+                }
             }
         }
 
         // Update is called once per frame
         void Update()
         {
+            QueueRenderMeshes();
+
             RenderMeshes();
 
             GenerateColliders();

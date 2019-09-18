@@ -120,6 +120,51 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &298336694
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 298336696}
+  - component: {fileID: 298336695}
+  m_Layer: 0
+  m_Name: VoxelBrush
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &298336695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 298336694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eddb33a735d419944b73742ab3f2d974, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  strength: 10
+  radius: 2
+--- !u!4 &298336696
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 298336694}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 48, y: 240, z: 240}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &909057668
 GameObject:
   m_ObjectHideFlags: 0
@@ -240,8 +285,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10e6ae6d5e0c7f84ba5c3571349ce9fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dim: {x: 8, y: 8, z: 8}
-  blockSize: 32
+  dim: {x: 4, y: 4, z: 4}
+  blockSize: 16
   mat: {fileID: 2100000, guid: 29ac23c454ff52747aae18a3fe60ded3, type: 2}
 --- !u!4 &1620156098
 Transform:
@@ -350,6 +395,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1670793426}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da9ed18b0969ec949b29196f0a57b443, type: 3}
+  m_Script: {fileID: 11500000, guid: d57877ac6305eed4ebfbcd8d0952c7ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

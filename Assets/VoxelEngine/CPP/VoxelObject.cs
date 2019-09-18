@@ -7,6 +7,8 @@ namespace Toast.Voxels
 {
     public class VoxelObject
     {
+        public readonly Transform root;
+
         public readonly Block[] blocks;
 
         public readonly int dimX;
@@ -22,10 +24,9 @@ namespace Toast.Voxels
         private readonly sbyte[] isovalues;
         private VoxelEngineWrapper voxelObjWrapper;
         private FastNoiseSIMD fastNoise;
+        private VoxelEngine voxelEngine;
 
-        public Transform root;
-
-        public VoxelObject(int dimX, int dimY, int dimZ, int blockSize)
+        public VoxelObject(int dimX, int dimY, int dimZ, int blockSize, VoxelEngine voxelEngine)
         {
             this.voxelObjWrapper = new VoxelEngineWrapper();
 
@@ -41,9 +42,12 @@ namespace Toast.Voxels
             this.isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
             this.blocks = new Block[dimX * dimY * dimZ];
 
+            this.voxelEngine = voxelEngine;
+
             root = new GameObject("Voxel Object").transform;
             root.position = Vector3.zero;
             root.rotation = Quaternion.identity;
+            root.gameObject.AddComponent<VoxelObjectUnity>().voxelObject = this;
 
             for (int x = 0; x < dimX; x++)
             {
@@ -51,13 +55,151 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < dimZ; z++)
                     {
-                        blocks[x + y * dimX + z * dimY * dimY] = new Block(x, y, z, 0, blockSize);
+                        blocks[x + y * dimX + z * dimY * dimY] = new Block(x, y, z, 0, blockSize, this);
                     }
                 }
             }
 
             fastNoise = new FastNoiseSIMD();
             fastNoise.SetFrequency(0.02f);
+        }
+
+        /// <summary>
+        /// Converts a float to Sbyte
+        /// </summary>
+        /// <param name="val">Must be between -1.0f and 1.0f</param>
+        /// <returns></returns>
+        public static sbyte FloatToSbyte(float val)
+        {
+            return (sbyte)(val * 128f);
+        }
+
+        static bool IsBitSet(byte b, int pos)
+        {
+            return (b & (1 << pos)) != 0;
+        }
+
+        bool BlockAt(int x, int y, int z, out Block block)
+        {
+            if (x < 0 || x > dimX - 1 || y < 0 || y > dimY - 1 || z < 0 || z > dimZ - 1)
+            {
+                block = null;
+                return false;
+            }
+
+            block = blocks[x + y * dimX + z * dimY * dimY];
+
+            return true;
+        }
+
+        /// <summary>
+        /// Updates an isovalue
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <param name="value">Must be between -1.0 and 1.0</param>
+        public void UpdateIsovalue(int x, int y, int z, sbyte value)
+        {
+            if (x < 0 || x > isoDimX - 1 || y < 0 || y > isoDimY - 1 || z < 0 || z > isoDimZ - 1)
+                return;
+
+            //local block coords
+            int blockX = x / blockSize;
+            int blockY = y / blockSize;
+            int blockZ = z / blockSize;
+
+            byte neighbourFlags = 0;
+
+            if (blockX < 3) neighbourFlags += 1;
+            else if (blockX > blockSize - 3) neighbourFlags += 8;
+            if (blockY < 3) neighbourFlags += 2;
+            else if (blockY > blockSize - 3) neighbourFlags += 16;
+            if (blockZ < 3) neighbourFlags += 4;
+            else if (blockZ > blockSize - 3) neighbourFlags += 32;
+
+            int blockIndX = x / blockSize;
+            int blockIndY = y / blockSize;
+            int blockIndZ = z / blockSize;
+
+            //Block neighbour;
+            byte test = 0;
+
+            for (int i = blockIndX - 1; i < blockIndX + 2; i++)
+            {
+                for (int j = blockIndY - 1; j < blockIndY + 2; j++)
+                {
+                    for (int k = blockIndZ - 1; k < blockIndZ + 2; k++)
+                    {
+                        test = 0;
+
+                        if (i == blockIndX - 1) test += 1;
+                        if (j == blockIndY - 1) test += 2;
+                        if (k == blockIndZ - 1) test += 4;
+
+                        if (i == blockIndX + 1) test += 8;
+                        if (j == blockIndY + 1) test += 16;
+                        if (k == blockIndZ + 1) test += 32;
+
+                        if ((test & neighbourFlags) == test && BlockAt(i, j, k, out var neighbour))
+                        {
+                            voxelEngine.UpdateBlock(neighbour);
+                        }
+                    }
+                }
+            }
+
+            isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = value;
+
+            if (BlockAt(blockIndX, blockIndY, blockIndZ, out var block))
+            {
+                voxelEngine.UpdateBlock(block);
+            }
+        }
+
+        public sbyte IsovalueAt(int x, int y, int z)
+        {
+            return isovalues[x + y * isoDimX + z * isoDimY * isoDimY];
+        }
+
+        /// <summary>
+        /// Updates isovalues in a sphere around the origin
+        /// </summary>
+        /// <param name="origin">Origin in world space</param>
+        /// <param name="radius"></param>
+        public void UpdateIsovalues(Vector3 origin, float radius, sbyte delta)
+        {
+            origin = root.worldToLocalMatrix * origin;
+
+            for (int x = (int)(origin.x - radius); x < (int)(origin.x + radius); x++)
+            {
+                if (x < 0) continue;
+                if (x > isoDimX - 1) break;
+
+                for (int y = (int)(origin.y - radius); y < (int)(origin.y + radius); y++)
+                {
+                    if (y < 0) continue;
+                    if (y > isoDimY - 1) break;
+
+                    for (int z = (int)(origin.z - radius); z < (int)(origin.z + radius); z++)
+                    {
+                        if (z < 0) continue;
+                        if (z > isoDimZ - 1) break;
+
+                        if (Vector3.Distance(origin, new Vector3(x, y, z)) < radius)
+                        {
+                            int res = IsovalueAt(x, y, z) + delta;
+
+                            if (res < -127)
+                                res = -127;
+                            else if (res > 127)
+                                res = 127;
+
+                            UpdateIsovalue(x, y, z, (sbyte)res);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -74,7 +216,7 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = (sbyte)(noiseSet[index++] * 128f); // (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
+                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = FloatToSbyte(noiseSet[index++]); // (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
                     }
                 }
             }
