@@ -190,8 +190,8 @@ namespace Toast.Voxels
                         {
                             int res = IsovalueAt(x, y, z) + delta;
 
-                            if (res < -127)
-                                res = -127;
+                            if (res < -128)
+                                res = -128;
                             else if (res > 127)
                                 res = 127;
 
@@ -216,7 +216,7 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = FloatToSbyte(noiseSet[index++]); // (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
+                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = /*FloatToSbyte(noiseSet[index++]); */ (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
                     }
                 }
             }

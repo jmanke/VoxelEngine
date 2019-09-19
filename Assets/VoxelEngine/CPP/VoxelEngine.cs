@@ -132,6 +132,8 @@ namespace Toast.Voxels
                         mesh.normals = voxelMesh.normals;
 
                         block.meshFilter.sharedMesh = mesh;
+                        block.renderer.enabled = false;
+                        block.renderer.enabled = true;
 
                         generateCollider.Enqueue(block);
                     }

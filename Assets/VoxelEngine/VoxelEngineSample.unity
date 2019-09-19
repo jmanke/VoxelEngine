@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eddb33a735d419944b73742ab3f2d974, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  strength: 10
+  strength: 127
   radius: 2
   rate: 0.05
 --- !u!4 &298336696
@@ -288,7 +288,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dim: {x: 4, y: 4, z: 4}
   blockSize: 16
-  mat: {fileID: 2100000, guid: fd5d4b26814e68d46886183887fb3a11, type: 2}
+  mat: {fileID: 2100000, guid: 75b138499e483374dbcb465e98430562, type: 2}
 --- !u!4 &1620156098
 Transform:
   m_ObjectHideFlags: 0

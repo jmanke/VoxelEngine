@@ -22,12 +22,12 @@
 			#pragma multi_compile _ SHADOWS_SCREEN
 			#pragma multi_compile _ VERTEXLIGHT_ON
 
-			#pragma vertex vert
-			#pragma fragment frag
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
 
 			#define FORWARD_BASE_PASS
 
-			#include "Lighting.cginc"
+			#include "MyLighting.cginc"
 		ENDCG
 		}
 
@@ -45,10 +45,10 @@
 
 			#pragma multi_compile_fwdadd_fullshadows
 
-			#pragma vertex vert
-			#pragma fragment frag
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
 
-			#include "Lighting.cginc"
+			#include "MyLighting.cginc"
 		ENDCG
 		}
 
@@ -66,7 +66,7 @@
 			#pragma vertex MyShadowVertexProgram
 			#pragma fragment MyShadowFragmentProgram
 
-			#include "Shadows.cginc"
+			#include "MyShadows.cginc"
 
 			ENDCG
 		}

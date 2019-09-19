@@ -10,7 +10,7 @@ struct appdata
 	float2 uv : TEXCOORD0;
 };
 
-struct v2f
+struct Interpolators 
 {
 	float4 pos : SV_POSITION;
 	float2 uv : TEXCOORD0;
@@ -29,7 +29,7 @@ sampler2D _MainTex;
 float4 _MainTex_ST;
 float _Smoothness;
 
-UnityLight CreateLight(v2f i) {
+UnityLight CreateLight(Interpolators  i) {
 	UnityLight light;
 #if defined(POINT) || defined(POINT_COOKIE) || defined(SPOT)
 	light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
@@ -46,7 +46,7 @@ UnityLight CreateLight(v2f i) {
 	return light;
 }
 
-void ComputeVertexLightColor(inout v2f i) {
+void ComputeVertexLightColor(inout Interpolators  i) {
 #if defined(VERTEXLIGHT_ON)
 	i.vertexLightColor = Shade4PointLights(
 		unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
@@ -57,7 +57,7 @@ void ComputeVertexLightColor(inout v2f i) {
 #endif
 }
 
-UnityIndirect CreateIndirectLight(v2f i) {
+UnityIndirect CreateIndirectLight(Interpolators  i) {
 	UnityIndirect indirectLight;
 	indirectLight.diffuse = 0;
 	indirectLight.specular = 0;
@@ -73,22 +73,26 @@ UnityIndirect CreateIndirectLight(v2f i) {
 	return indirectLight;
 }
 
-
-v2f vert(appdata v)
+Interpolators MyVertexProgram(appdata v)
 {
-	v2f o;
+	Interpolators  o;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 	o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.normal = normalize(o.normal);
+
 	TRANSFER_SHADOW(o);
 	ComputeVertexLightColor(o);
 	return o;
 }
 
-fixed4 frag(v2f i) : SV_Target
+fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 {
+	float3 dpdx = ddx(i.worldPos);
+	float3 dpdy = ddy(i.worldPos);
+	i.normal = normalize(cross(dpdy, dpdx));
+
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
 	float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
