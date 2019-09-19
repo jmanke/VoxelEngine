@@ -3,6 +3,7 @@
     Properties
     {
         _MainTex ("Albedo", 2D) = "white" {}
+		_3DNoise("Noise", 3D) = "white" {}
 		_Tint("Tint", Color) = (1,1,1,1)
 		[Gamma] _Metallic("Metallic", Range(0, 1)) = 0
 		_Smoothness("Smoothness", Range(0, 1)) = 0.5

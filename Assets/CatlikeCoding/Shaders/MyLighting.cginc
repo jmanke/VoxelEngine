@@ -10,6 +10,10 @@ struct appdata
 	float2 uv : TEXCOORD0;
 };
 
+struct TriplanarUV {
+	float2 x, y, z;
+};
+
 struct Interpolators 
 {
 	float4 pos : SV_POSITION;
@@ -95,7 +99,55 @@ fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
-	float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+	// Find our UVs for each axis based on world position of the fragment.
+	half2 yUV = i.worldPos.xz;
+	half2 xUV = i.worldPos.zy;
+	half2 zUV = i.worldPos.xy;
+	// Now do texture samples from our diffuse map with each of the 3 UV set's we've just made.
+	half3 yDiff = tex2D(_MainTex, yUV);
+	half3 xDiff = tex2D(_MainTex, xUV);
+	half3 zDiff = tex2D(_MainTex, zUV);
+	// Get the absolute value of the world normal.
+	// Put the blend weights to the power of BlendSharpness, the higher the value, 
+	// the sharper the transition between the planar maps will be.
+	//half3 blendWeights = pow(abs(i.normal), 0.5);
+	// Divide our blend mask by the sum of it's components, this will make x+y+z=1
+	//blendWeights = blendWeights / (blendWeights.x + blendWeights.y + blendWeights.z);
+	// Finally, blend together all three samples based on the blend mask.
+
+	float dotX = abs(dot(float3(1, 0, 0), i.normal));
+	float dotY = abs(dot(float3(0, 1, 0), i.normal));
+	float dotZ = abs(dot(float3(0, 0, 1), i.normal));
+
+	float3 albedo = 0;
+
+	// Check similarity
+	if (abs(dotX - dotY) < 0.01) {
+		dotX = dotY;
+		dotY = dotX;
+		dotX += 0.01;
+	}
+
+	if (abs(dotX - dotZ) < 0.01) {
+		dotX = dotZ;
+		dotZ = dotX;
+		dotX += 0.01;
+	}
+
+	if (abs(dotY - dotZ) < 0.01) {
+		dotY = dotZ;
+		dotZ = dotY;
+		dotZ += 0.02;
+	}
+
+	if (dotX > dotY && dotX > dotZ)
+		albedo = xDiff;
+	else if (dotY > dotX && dotY > dotZ)
+		albedo = yDiff;
+	else
+		albedo = zDiff;
+
+	//float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
 	float3 specularTint;
 	float oneMinusReflectivity;
 

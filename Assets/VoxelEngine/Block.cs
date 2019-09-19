@@ -1,37 +1,40 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
-namespace Toast.Voxels.Old
+namespace Toast.Voxels
 {
-    public struct Block
+    public class Block
     {
+        public string id;
         public int x;
         public int y;
         public int z;
         public int lod;
-        public float spacing;
         public int size;
-        public Cell[] cells;
 
-        public Block(int x, int y, int z, int lod, int size)
+        public VoxelObject voxelObject;
+
+        public GameObject go;
+        public MeshRenderer renderer;
+        public MeshCollider collider;
+        public MeshFilter meshFilter;
+
+        public Block(int x, int y, int z, int lod, int size, VoxelObject voxelObject)
         {
             this.x = x;
             this.y = y;
             this.z = z;
-            this.spacing = Mathf.Pow(2, lod);
             this.lod = lod;
             this.size = size;
-            this.cells = new Cell[size * size * size];
+            this.id = GenerateId(x, y, z, lod);
+            this.voxelObject = voxelObject;
         }
 
-        public static Vector3 BlockGlobalCoord(Block block) {
-		    return new Vector3(block.x, + block.y, + block.z) * block.size;
-        }
-
-        public static int CellInd(int x, int y, int z, int size)
+        public static string GenerateId(int x, int y, int z, int lod)
         {
-            return x + y * size + z * size * size;
+            return $"{x}_{y}_{z}_{lod}";
         }
     }
 }
