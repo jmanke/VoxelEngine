@@ -304,7 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10e6ae6d5e0c7f84ba5c3571349ce9fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dim: {x: 4, y: 4, z: 4}
+  dim: {x: 3, y: 3, z: 3}
   blockSize: 16
   mat: {fileID: 2100000, guid: 75b138499e483374dbcb465e98430562, type: 2}
 --- !u!4 &738727065

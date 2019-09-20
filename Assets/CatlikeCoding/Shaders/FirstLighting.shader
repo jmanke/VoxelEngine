@@ -2,8 +2,8 @@
 {
     Properties
     {
-        _MainTex ("Albedo", 2D) = "white" {}
-		_3DNoise("Noise", 3D) = "white" {}
+        _MainTex ("Main", 2D) = "white" {}
+		_SecondaryTex("Secondary", 2D) = "white" {}
 		_Tint("Tint", Color) = (1,1,1,1)
 		[Gamma] _Metallic("Metallic", Range(0, 1)) = 0
 		_Smoothness("Smoothness", Range(0, 1)) = 0.5
@@ -17,7 +17,7 @@
 			}
 
 			CGPROGRAM
-
+			#pragma vertex:vert
 			#pragma target 3.0
 
 			#pragma multi_compile _ SHADOWS_SCREEN
@@ -42,6 +42,7 @@
 
 			CGPROGRAM
 
+			#pragma vertex:vert
 			#pragma target 3.0
 
 			#pragma multi_compile_fwdadd_fullshadows
@@ -59,7 +60,7 @@
 			}
 
 			CGPROGRAM
-
+			#pragma vertex:vert
 			#pragma target 3.0
 
 			#pragma multi_compile_shadowcaster

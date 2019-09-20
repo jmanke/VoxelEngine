@@ -8,6 +8,6 @@ namespace Toast.Voxels
     {
         public Vector3[] vertices;
         public int[] triangles;
-        public Vector3[] normals;
+        public Color32[] vertexMaterialIndices;
     }
 }

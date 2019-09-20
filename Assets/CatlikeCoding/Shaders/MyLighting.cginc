@@ -7,6 +7,7 @@ struct appdata
 {
 	float4 vertex : POSITION;
 	float3 normal: NORMAL;
+	float4 color : COLOR;
 	float2 uv : TEXCOORD0;
 };
 
@@ -17,6 +18,7 @@ struct TriplanarUV {
 struct Interpolators 
 {
 	float4 pos : SV_POSITION;
+	float4 color : COLOR;
 	float2 uv : TEXCOORD0;
 	float3 normal : TEXCOORD1;
 	float3 worldPos : TEXCOORD2;
@@ -31,6 +33,8 @@ float4 _Tint;
 float _Metallic;
 sampler2D _MainTex;
 float4 _MainTex_ST;
+sampler2D _SecondaryTex;
+float4 SecondaryTex_ST;
 float _Smoothness;
 
 UnityLight CreateLight(Interpolators  i) {
@@ -85,6 +89,7 @@ Interpolators MyVertexProgram(appdata v)
 	o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.normal = normalize(o.normal);
+	o.color = v.color;
 
 	TRANSFER_SHADOW(o);
 	ComputeVertexLightColor(o);
@@ -104,9 +109,21 @@ fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 	half2 xUV = i.worldPos.zy;
 	half2 zUV = i.worldPos.xy;
 	// Now do texture samples from our diffuse map with each of the 3 UV set's we've just made.
-	half3 yDiff = tex2D(_MainTex, yUV);
-	half3 xDiff = tex2D(_MainTex, xUV);
-	half3 zDiff = tex2D(_MainTex, zUV);
+
+	half3 yDiff;
+	half3 xDiff;
+	half3 zDiff;
+
+	if (i.color.r < 1.5/255) {
+		yDiff = tex2D(_MainTex, yUV);
+		xDiff = tex2D(_MainTex, xUV);
+		zDiff = tex2D(_MainTex, zUV);
+	}
+	else {
+		yDiff = tex2D(_SecondaryTex, yUV);
+		xDiff = tex2D(_SecondaryTex, xUV);
+		zDiff = tex2D(_SecondaryTex, zUV);
+	}
 	// Get the absolute value of the world normal.
 	// Put the blend weights to the power of BlendSharpness, the higher the value, 
 	// the sharper the transition between the planar maps will be.

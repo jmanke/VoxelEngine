@@ -14,14 +14,13 @@ namespace Toast.Voxels
         public readonly int dimX;
         public readonly int dimY;
         public readonly int dimZ;
-
         public readonly int blockSize;
 
         private readonly int isoDimX;
         private readonly int isoDimY;
         private readonly int isoDimZ;
-
         private readonly sbyte[] isovalues;
+        private readonly byte[] materialValues;
         private VoxelEngineWrapper voxelObjWrapper;
         private FastNoiseSIMD fastNoise;
         private VoxelEngine voxelEngine;
@@ -38,8 +37,8 @@ namespace Toast.Voxels
             this.isoDimX = dimX * blockSize;
             this.isoDimY = dimY * blockSize;
             this.isoDimZ = dimZ * blockSize;
-
             this.isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
+            this.materialValues = new byte[isoDimX * isoDimY * isoDimZ];
             this.blocks = new Block[dimX * dimY * dimZ];
 
             this.voxelEngine = voxelEngine;
@@ -123,7 +122,7 @@ namespace Toast.Voxels
             int blockIndZ = z / blockSize;
 
             //Block neighbour;
-            byte test = 0;
+            byte neighbourMask = 0;
 
             for (int i = blockIndX - 1; i < blockIndX + 2; i++)
             {
@@ -131,17 +130,17 @@ namespace Toast.Voxels
                 {
                     for (int k = blockIndZ - 1; k < blockIndZ + 2; k++)
                     {
-                        test = 0;
+                        neighbourMask = 0;
 
-                        if (i == blockIndX - 1) test += 1;
-                        if (j == blockIndY - 1) test += 2;
-                        if (k == blockIndZ - 1) test += 4;
+                        if (i == blockIndX - 1) neighbourMask += 1;
+                        if (j == blockIndY - 1) neighbourMask += 2;
+                        if (k == blockIndZ - 1) neighbourMask += 4;
 
-                        if (i == blockIndX + 1) test += 8;
-                        if (j == blockIndY + 1) test += 16;
-                        if (k == blockIndZ + 1) test += 32;
+                        if (i == blockIndX + 1) neighbourMask += 8;
+                        if (j == blockIndY + 1) neighbourMask += 16;
+                        if (k == blockIndZ + 1) neighbourMask += 32;
 
-                        if ((test & neighbourFlags) == test && BlockAt(i, j, k, out var neighbour))
+                        if ((neighbourMask & neighbourFlags) == neighbourMask && BlockAt(i, j, k, out var neighbour))
                         {
                             voxelEngine.UpdateBlock(neighbour);
                         }
@@ -186,8 +185,8 @@ namespace Toast.Voxels
                         if (z < 0) continue;
                         if (z > isoDimZ - 1) break;
 
-                        if (Vector3.Distance(origin, new Vector3(x, y, z)) < radius)
-                        {
+                        //if (Vector3.Distance(origin, new Vector3(x, y, z)) < radius)
+                        //{
                             int res = IsovalueAt(x, y, z) + delta;
 
                             if (res < -128)
@@ -196,7 +195,7 @@ namespace Toast.Voxels
                                 res = 127;
 
                             UpdateIsovalue(x, y, z, (sbyte)res);
-                        }
+                        //}
                     }
                 }
             }
@@ -216,15 +215,15 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = /*FloatToSbyte(noiseSet[index++]); */ (noiseSet[index++] < 0) ? (sbyte)-1 : (sbyte)1;
+                        float isoval = noiseSet[index++]; 
+                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = (isoval < 0) ? (sbyte)-1 : (sbyte)1;
+                        materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.05f) ? (byte)1 : (byte)2;
                     }
                 }
             }
-
-            Debug.Log("Filled");
         }
 
-        public void FillIsoValues(Block block, sbyte[] filledIsoValues)
+        public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)
         {
             int isoSize = block.size + 3;
 
@@ -247,7 +246,10 @@ namespace Toast.Voxels
                         else if (isoZ > isoDimZ - 1)
                             isoZ = isoDimZ - 1;
 
-                        filledIsoValues[x + y * isoSize + z * isoSize * isoSize] = isovalues[isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY];
+                        int filledInd = x + y * isoSize + z * isoSize * isoSize;
+                        int ind = isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY;
+                        filledIsoValues[filledInd] = isovalues[isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY];
+                        filledMaterialIndices[filledInd] = materialValues[ind];
                     }
                 }
             }
@@ -260,13 +262,14 @@ namespace Toast.Voxels
             int numIsovalues = (blockSize + 3) * (blockSize + 3) * (blockSize + 3);
 
             var isovalues = new sbyte[numIsovalues];
+            var materialIndicies = new byte[numIsovalues];
             var vertices = new Vector3[maxTriCount * 3];
-            var normals = new Vector3[maxTriCount * 3];
             var triangles = new int[maxTriCount * 3];
+            var vertexMaterialIndices = new Color32[maxTriCount * 3];
             var numVert = new int[1] { 0 };
             var numTri = new int[1] { 0 };
 
-            FillIsoValues(block, isovalues);
+            FillIsoValues(block, isovalues, materialIndicies);
 
             voxelObjWrapper.ComputeMesh(isovalues,
                                         blockSize,
@@ -275,16 +278,17 @@ namespace Toast.Voxels
                                         numVert,
                                         triangles,
                                         numTri,
-                                        normals);
+                                        materialIndicies,
+                                        vertexMaterialIndices);
 
             System.Array.Resize(ref vertices, numVert[0]);
-            System.Array.Resize(ref normals, numVert[0]);
             System.Array.Resize(ref triangles, numTri[0]);
+            System.Array.Resize(ref vertexMaterialIndices, numVert[0]);
 
             var voxelMesh = new VoxelMesh();
             voxelMesh.vertices = vertices;
             voxelMesh.triangles = triangles;
-            voxelMesh.normals = normals;
+            voxelMesh.vertexMaterialIndices = vertexMaterialIndices;
 
             return voxelMesh;
         }

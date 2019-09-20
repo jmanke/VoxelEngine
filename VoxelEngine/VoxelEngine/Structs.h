@@ -22,6 +22,7 @@ struct Cell {
 	//glm::vec3 localPosition;
 	// point to vertex position in array
 	int reuseVertexIndicies[4];
+	int materialIndex;
 
 	static unsigned long generateCaseCode(const char corner[8]) {
 		return ((corner[0] >> 7) & 0x01)
@@ -67,8 +68,7 @@ struct Mesh {
 	glm::vec3* verticies;
 	int triInd;
 	int* triangles;
-	glm::vec3* normals;
-	int reuseNum;
+	int* vertexMaterialIndicies;
 
-	Mesh(glm::vec3* verticies, int* triangles, glm::vec3* normals) : vertInd(0), verticies(verticies), triInd(0), triangles(triangles), reuseNum(0), normals(normals) {}
+	Mesh(glm::vec3* verticies, int* triangles, int* vertexMaterialIndicies) : vertInd(0), verticies(verticies), triInd(0), triangles(triangles), vertexMaterialIndicies(vertexMaterialIndicies) {}
 };

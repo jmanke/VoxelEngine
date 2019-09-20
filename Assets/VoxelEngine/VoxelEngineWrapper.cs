@@ -16,7 +16,7 @@ namespace Toast.Voxels
         public static extern void delete_VoxelObject(System.IntPtr instance);
 
         [DllImport(NATIVE_LIB, CallingConvention = CallingConvention.StdCall)]
-        public static extern void ComputeMesh(System.IntPtr instance, sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals);
+        public static extern void ComputeMesh(System.IntPtr instance, sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, byte[] materialIndices, Color32[] vertexMaterialIndices);
 
         private readonly System.IntPtr instance;
 
@@ -25,9 +25,9 @@ namespace Toast.Voxels
             this.instance = new_VoxelObject();
         }
 
-        public void ComputeMesh(sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, Vector3[] normals)
+        public void ComputeMesh(sbyte[] isovalues, int blockSize, int lod, Vector3[] vertices, int[] vertexCount, int[] triangles, int[] triangleCount, byte[] materialIndices, Color32[] vertexMaterialIndices)
         {
-            ComputeMesh(instance, isovalues, blockSize, lod, vertices, vertexCount, triangles, triangleCount, normals);
+            ComputeMesh(instance, isovalues, blockSize, lod, vertices, vertexCount, triangles, triangleCount, materialIndices, vertexMaterialIndices);
         }
 
         ~VoxelEngineWrapper()

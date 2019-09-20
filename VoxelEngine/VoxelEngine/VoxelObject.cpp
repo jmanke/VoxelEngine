@@ -20,11 +20,11 @@ VoxelObject::~VoxelObject() {
 }
 
 
-glm::vec3 VoxelObject::CalcNormal(const Coord& coord, const VoxelGrid& grid) {
-	return glm::vec3(grid.IsovalueAt(coord + UNIT_X) - grid.IsovalueAt(coord - UNIT_X) * 0.5f,
-		grid.IsovalueAt(coord + UNIT_Y) - grid.IsovalueAt(coord - UNIT_Y) * 0.5f,
-		grid.IsovalueAt(coord + UNIT_Z) - grid.IsovalueAt(coord - UNIT_Z) * 0.5f);
-}
+//glm::vec3 VoxelObject::CalcNormal(const Coord& coord, const VoxelGrid& grid) {
+//	return glm::vec3(grid.IsovalueAt(coord + UNIT_X) - grid.IsovalueAt(coord - UNIT_X) * 0.5f,
+//		grid.IsovalueAt(coord + UNIT_Y) - grid.IsovalueAt(coord - UNIT_Y) * 0.5f,
+//		grid.IsovalueAt(coord + UNIT_Z) - grid.IsovalueAt(coord - UNIT_Z) * 0.5f);
+//}
 
 
 void getPreeceedingCellIndex(int& x, int& y, int& z, char direction) {
@@ -47,15 +47,17 @@ Cell VoxelObject::MakeCell(const Coord& coord, const VoxelGrid& grid)
 				grid.IsovalueAt(Cell::getCornerCoord(grid.spacing, coord, 6)),
 				grid.IsovalueAt(Cell::getCornerCoord(grid.spacing, coord, 7)),
 			},
-			{0, 0, 0, 0}
+			{0, 0, 0, 0},
+			grid.MaterialIndexAt(Cell::getCornerCoord(grid.spacing, coord, 0))
 	};
 
 	return cell;
 }
 
-void VoxelObject::ComputeMesh(char* isovalues, int blockSize, int lod, glm::vec3 * vertices, int * vertexCount, int * triangles, int * triangleCount, glm::vec3 * normals) {
-	auto mesh = Mesh(vertices, triangles, normals);
-	auto grid = VoxelGrid(isovalues, blockSize, lod);
+// TODO: Encode isovalues and materials in one int* where this information is stored as a Color32 in Unity. Example: isovalues stored in R channel and materials in the G channel
+void VoxelObject::ComputeMesh(char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, char* materialIndices, int* vertexMaterialIndices) {
+	auto mesh = Mesh(vertices, triangles, vertexMaterialIndices);
+	auto grid = VoxelGrid(isovalues, materialIndices, blockSize, lod);
 
 	GenerateRegularCells(grid, mesh);
 
@@ -128,7 +130,6 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 					}
 					// Vertex lies on the endpoint of an edge (for -1, 1 points, this doesn't apply)
 					else {
-						//mesh.reuseNum++;
 						if ((direction & reuseMask) != direction) {
 							createVertex = true;
 						}
@@ -143,16 +144,33 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 							cell.reuseVertexIndicies[vIndexInCell] = mesh.vertInd;
 
 						triangleVertexIndex[vertexIndex] = mesh.vertInd;
-						mesh.normals[mesh.vertInd] = CalcNormal(Q, grid);
 						mesh.verticies[mesh.vertInd] = Q;
+						mesh.vertexMaterialIndicies[mesh.vertInd] = cell.materialIndex;
 						mesh.vertInd++;
 					}
 					else {
 						int preX = x; int preY = y; int preZ = z;
 						getPreeceedingCellIndex(preX, preY, preZ, direction);
 						const auto& preCell = reuseCells[ReuseCellInd(preX, preY, preZ, grid.blockSize)];
-						// get preceeding cell index
-						triangleVertexIndex[vertexIndex] = preCell.reuseVertexIndicies[vIndexInCell];
+
+						// TODO: duplicate code here for creating a vertex, clean this up
+						if (preCell.materialIndex != cell.materialIndex) {
+							long u = 0x0100 - t;
+							Q = ((float)t * p0 + (float)u * p1) / 256.0f;
+
+							// only add the maximal edges
+							if (direction & 0x8)
+								cell.reuseVertexIndicies[vIndexInCell] = mesh.vertInd;
+
+							triangleVertexIndex[vertexIndex] = mesh.vertInd;
+							mesh.verticies[mesh.vertInd] = Q;
+							mesh.vertexMaterialIndicies[mesh.vertInd] = cell.materialIndex;
+							mesh.vertInd++;
+						}
+						else {
+							// get preceeding cell index
+							triangleVertexIndex[vertexIndex] = preCell.reuseVertexIndicies[vIndexInCell];
+						}
 					}
 				}
 

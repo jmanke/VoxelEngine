@@ -129,7 +129,23 @@ namespace Toast.Voxels
                         var mesh = new Mesh();
                         mesh.vertices = voxelMesh.vertices;
                         mesh.triangles = voxelMesh.triangles;
-                        mesh.normals = voxelMesh.normals;
+                        mesh.colors32 = voxelMesh.vertexMaterialIndices;
+
+                        int first = 0;
+                        int second = 0;
+
+                        foreach (var ind in voxelMesh.vertexMaterialIndices)
+                        {
+                            if (ind.r == 1)
+                                first++;
+                            else
+                                second++;
+                        }
+
+                        Debug.Log($"{first} : {second}");
+
+                        //if (voxelMesh.vertexMaterialIndices.Length > 0)
+                        //    Debug.Log(voxelMesh.vertexMaterialIndices[0].r.ToString());
 
                         block.meshFilter.sharedMesh = mesh;
                         block.renderer.enabled = false;
