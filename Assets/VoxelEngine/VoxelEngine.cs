@@ -27,7 +27,6 @@ namespace Toast.Voxels
         /// Queue for generating colliders on a block
         /// </summary>
         private Queue<Block> generateCollider = new Queue<Block>();
-
         private VoxelObject voxelObject;
 
         private class RenderGroup
@@ -131,19 +130,6 @@ namespace Toast.Voxels
                         mesh.triangles = voxelMesh.triangles;
                         mesh.colors32 = voxelMesh.vertexMaterialIndices;
 
-                        int first = 0;
-                        int second = 0;
-
-                        foreach (var ind in voxelMesh.vertexMaterialIndices)
-                        {
-                            if (ind.r == 1)
-                                first++;
-                            else
-                                second++;
-                        }
-
-                        Debug.Log($"{first} : {second}");
-
                         //if (voxelMesh.vertexMaterialIndices.Length > 0)
                         //    Debug.Log(voxelMesh.vertexMaterialIndices[0].r.ToString());
 
@@ -163,8 +149,7 @@ namespace Toast.Voxels
         {
             for (int i = 0; i < generateCollider.Count && i < 2; i++)
             {
-
-                Debug.Log("Generate collider");
+                //Debug.Log("Generate collider");
                 var block = generateCollider.Dequeue();
 
                 if (block.collider == null)

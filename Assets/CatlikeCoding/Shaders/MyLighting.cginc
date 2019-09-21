@@ -96,7 +96,9 @@ Interpolators MyVertexProgram(appdata v)
 	return o;
 }
 
-fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
+UNITY_DECLARE_TEX2DARRAY(_TexArr);
+
+float4 MyFragmentProgram(Interpolators  i) : SV_Target
 {
 	float3 dpdx = ddx(i.worldPos);
 	float3 dpdy = ddy(i.worldPos);
@@ -105,25 +107,29 @@ fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
 	// Find our UVs for each axis based on world position of the fragment.
-	half2 yUV = i.worldPos.xz;
-	half2 xUV = i.worldPos.zy;
-	half2 zUV = i.worldPos.xy;
+	//half2 yUV = i.worldPos.xz;
+	//half2 xUV = i.worldPos.zy;
+	//half2 zUV = i.worldPos.xy;
 	// Now do texture samples from our diffuse map with each of the 3 UV set's we've just made.
 
-	half3 yDiff;
-	half3 xDiff;
-	half3 zDiff;
+	//half3 yDiff;
+	//half3 xDiff;
+	//half3 zDiff;
 
-	if (i.color.r < 1.5/255) {
-		yDiff = tex2D(_MainTex, yUV);
-		xDiff = tex2D(_MainTex, xUV);
-		zDiff = tex2D(_MainTex, zUV);
-	}
-	else {
-		yDiff = tex2D(_SecondaryTex, yUV);
-		xDiff = tex2D(_SecondaryTex, xUV);
-		zDiff = tex2D(_SecondaryTex, zUV);
-	}
+	//yDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(yUV, ind));
+	//xDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(xUV, ind));
+	//zDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(zUV, ind));
+
+	//if (i.color.r < 1.5/255) {
+	//	yDiff = tex2D(_MainTex, yUV);
+	//	xDiff = tex2D(_MainTex, xUV);
+	//	zDiff = tex2D(_MainTex, zUV);
+	//}
+	//else {
+	//	yDiff = tex2D(_SecondaryTex, yUV);
+	//	xDiff = tex2D(_SecondaryTex, xUV);
+	//	zDiff = tex2D(_SecondaryTex, zUV);
+	//}
 	// Get the absolute value of the world normal.
 	// Put the blend weights to the power of BlendSharpness, the higher the value, 
 	// the sharper the transition between the planar maps will be.
@@ -135,8 +141,6 @@ fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 	float dotX = abs(dot(float3(1, 0, 0), i.normal));
 	float dotY = abs(dot(float3(0, 1, 0), i.normal));
 	float dotZ = abs(dot(float3(0, 0, 1), i.normal));
-
-	float3 albedo = 0;
 
 	// Check similarity
 	if (abs(dotX - dotY) < 0.01) {
@@ -157,16 +161,21 @@ fixed4 MyFragmentProgram(Interpolators  i) : SV_Target
 		dotZ += 0.02;
 	}
 
+	float ind = i.color.r * 255 + 0.5;// +0.5;
+	float3 albedo = 0;
+
 	if (dotX > dotY && dotX > dotZ)
-		albedo = xDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.zy, ind)); //xDiff;
 	else if (dotY > dotX && dotY > dotZ)
-		albedo = yDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xz, ind)); //yDiff;
 	else
-		albedo = zDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xy, ind)); //zDiff;
 
 	//float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
 	float3 specularTint;
 	float oneMinusReflectivity;
+
+	//albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xz, ind)) * _Tint;
 
 	albedo = DiffuseAndSpecularFromMetallic(
 		albedo, _Metallic, specularTint, oneMinusReflectivity

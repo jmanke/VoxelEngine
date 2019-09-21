@@ -2,6 +2,7 @@
 {
     Properties
     {
+		_TexArr("Tex", 2DArray) = "white" {}
         _MainTex ("Main", 2D) = "white" {}
 		_SecondaryTex("Secondary", 2D) = "white" {}
 		_Tint("Tint", Color) = (1,1,1,1)
@@ -18,7 +19,8 @@
 
 			CGPROGRAM
 			#pragma vertex:vert
-			#pragma target 3.0
+			#pragma require 2darray
+			#pragma target 3.5
 
 			#pragma multi_compile _ SHADOWS_SCREEN
 			#pragma multi_compile _ VERTEXLIGHT_ON
@@ -43,7 +45,8 @@
 			CGPROGRAM
 
 			#pragma vertex:vert
-			#pragma target 3.0
+			#pragma require 2darray
+			#pragma target 3.5
 
 			#pragma multi_compile_fwdadd_fullshadows
 
@@ -61,7 +64,8 @@
 
 			CGPROGRAM
 			#pragma vertex:vert
-			#pragma target 3.0
+			#pragma require 2darray
+			#pragma target 3.5
 
 			#pragma multi_compile_shadowcaster
 

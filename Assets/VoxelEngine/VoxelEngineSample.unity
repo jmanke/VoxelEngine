@@ -307,6 +307,9 @@ MonoBehaviour:
   dim: {x: 3, y: 3, z: 3}
   blockSize: 16
   mat: {fileID: 2100000, guid: 75b138499e483374dbcb465e98430562, type: 2}
+  texture2Ds:
+  - {fileID: 2800000, guid: f3fe2a5501ac52542b4b801858ba3387, type: 3}
+  - {fileID: 2800000, guid: 15dc3e8658cf61c41998816d124766d6, type: 3}
 --- !u!4 &738727065
 Transform:
   m_ObjectHideFlags: 0

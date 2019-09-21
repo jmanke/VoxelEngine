@@ -215,9 +215,9 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        float isoval = noiseSet[index++]; 
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = (isoval < 0) ? (sbyte)-1 : (sbyte)1;
-                        materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.05f) ? (byte)1 : (byte)2;
+                        float isoval = noiseSet[index++];
+                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] =  (isoval < 0) ? (sbyte)-1 : (sbyte)1; //FloatToSbyte(isoval);
+                        materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
                     }
                 }
             }
