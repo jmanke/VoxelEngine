@@ -24,24 +24,34 @@ namespace Toast.Voxels
         private VoxelEngineWrapper voxelObjWrapper;
         private FastNoiseSIMD fastNoise;
         private VoxelEngine voxelEngine;
+        private VoxelObjectSettings settings;
+        private INoiseFilter[] noiseFilters;
 
-        public VoxelObject(int dimX, int dimY, int dimZ, int blockSize, VoxelEngine voxelEngine)
+        public VoxelObject(VoxelObjectSettings settings, VoxelEngine voxelEngine)
         {
             this.voxelObjWrapper = new VoxelEngineWrapper();
+            this.settings = settings;
 
-            this.dimX = dimX;
-            this.dimY = dimY;
-            this.dimZ = dimZ;
-            this.blockSize = blockSize;
+            dimX = settings.dimensions.x;
+            dimY = settings.dimensions.y;
+            dimZ = settings.dimensions.z;
+            blockSize = settings.blockSize;
 
-            this.isoDimX = dimX * blockSize;
-            this.isoDimY = dimY * blockSize;
-            this.isoDimZ = dimZ * blockSize;
-            this.isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
-            this.materialValues = new byte[isoDimX * isoDimY * isoDimZ];
-            this.blocks = new Block[dimX * dimY * dimZ];
+            isoDimX = dimX * blockSize;
+            isoDimY = dimY * blockSize;
+            isoDimZ = dimZ * blockSize;
+            isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
+            materialValues = new byte[isoDimX * isoDimY * isoDimZ];
+            blocks = new Block[dimX * dimY * dimZ];
 
             this.voxelEngine = voxelEngine;
+
+            noiseFilters = new INoiseFilter[settings.noiseLayers.Length];
+
+            for (int i = 0; i < noiseFilters.Length; i++)
+            {
+                noiseFilters[i] = NoiseFilterFactory.CreateNoiseFilter(settings.noiseLayers[i].noiseSettings);
+            }
 
             root = new GameObject("Voxel Object").transform;
             root.position = Vector3.zero;
@@ -61,6 +71,11 @@ namespace Toast.Voxels
 
             fastNoise = new FastNoiseSIMD();
             fastNoise.SetFrequency(0.02f);
+        }
+
+        public void Destroy()
+        {
+            Object.Destroy(root.gameObject);
         }
 
         /// <summary>
@@ -201,13 +216,60 @@ namespace Toast.Voxels
             }
         }
 
+        public float CalculateIsovalue(float x, float y, float z)
+        {
+            float[] computedValues = new float[noiseFilters.Length];
+            float val = 0f;
+
+            for (int i = 0; i < noiseFilters.Length; i++)
+            {
+                if (settings.noiseLayers[i].enabled)
+                {
+                    bool useLayerAsMask = settings.noiseLayers[i].useLayerAsMask;
+
+                    if (useLayerAsMask)
+                    {
+                        int maskingLayer = settings.noiseLayers[i].maskingLayer;
+
+                        if (settings.noiseLayers[maskingLayer].enabled)
+                        {
+                            if ((settings.noiseLayers[i].comparator == VoxelObjectSettings.NoiseLayer.Comparator.LessThan && computedValues[maskingLayer] < settings.noiseLayers[i].compareAgainst) ||
+                                (settings.noiseLayers[i].comparator == VoxelObjectSettings.NoiseLayer.Comparator.GreaterThan && computedValues[maskingLayer] > settings.noiseLayers[i].compareAgainst))
+                            {
+                                continue;
+                            }
+
+                            if (settings.noiseLayers[i].overrideValue)
+                                val = 0f;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
+                    float computedVal = noiseFilters[i].Evaluate(x, y, z) * settings.noiseLayers[i].noiseSettings.strength * ((settings.noiseLayers[i].noiseSettings.invertValue) ? -1 : 1);
+                    computedValues[i] = computedVal;
+
+                    if (!settings.noiseLayers[i].ignoreValue)
+                        val += computedVal;
+                }
+            }
+
+            return val;
+        }
+
         /// <summary>
         /// TODO: generate noise somewhere else
         /// </summary>
         public void GenerateIsovalues()
         {
-            float[] noiseSet = fastNoise.GetNoiseSet(0, 0, 0, isoDimX, isoDimY, isoDimZ);
-            int index = 0;
+            //var noiseFilter = new AsteroidANoiseProfile();
+            //noiseFilter.centre = new Vector3(isoDimX, isoDimY, isoDimZ) / 2f;
+            //noiseFilter.radius = 20f;
+            //noiseFilter.amp = 0.5f;
+            //noiseFilter.noise.frequency = 0.2f;
+            //noiseFilter.noise.SaveSettings();
 
             for (int x = 0; x < isoDimX; x++)
             {
@@ -215,12 +277,29 @@ namespace Toast.Voxels
                 {
                     for (int z = 0; z < isoDimZ; z++)
                     {
-                        float isoval = noiseSet[index++];
-                        isovalues[x + y * isoDimX + z * isoDimY * isoDimY] =  (isoval < 0) ? (sbyte)-1 : (sbyte)1; //FloatToSbyte(isoval);
-                        materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
+                        int ind = x + y * isoDimX + z * isoDimY * isoDimY;
+                        float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
+                        isovalues[ind] = (isoval < 0) ? (sbyte)-1 : (sbyte)1; /*FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));*/
+                        materialValues[ind] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
                     }
                 }
             }
+
+            //float[] noiseSet = fastNoise.GetNoiseSet(0, 0, 0, isoDimX, isoDimY, isoDimZ);
+            //int index = 0;
+
+            //for (int x = 0; x < isoDimX; x++)
+            //{
+            //    for (int y = 0; y < isoDimY; y++)
+            //    {
+            //        for (int z = 0; z < isoDimZ; z++)
+            //        {
+            //            float isoval = noiseSet[index++];
+            //            isovalues[x + y * isoDimX + z * isoDimY * isoDimY] =  (isoval < 0) ? (sbyte)-1 : (sbyte)1; //FloatToSbyte(isoval);
+            //            materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
+            //        }
+            //    }
+            //}
         }
 
         public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)

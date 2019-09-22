@@ -150,7 +150,7 @@ public class FastNoiseUnityEditor : Editor
 		for (int i = 0; i < noiseSet.Length; i++)
 		{
 			byte noise = (byte)Mathf.Clamp((noiseSet[i] - min) * scale, 0f, 255f);
-				pixels[i] = new Color32(noise, noise, noise, 255);
+			pixels[i] = new Color32(noise, noise, noise, 255);
 		}
 
 		tex.SetPixels32(pixels);

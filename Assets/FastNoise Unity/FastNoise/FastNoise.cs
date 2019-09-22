@@ -70,6 +70,29 @@ public class FastNoise
 
 	private FN_DECIMAL m_gradientPerturbAmp = (FN_DECIMAL)1.0;
 
+    public void ApplySettings(NoiseSettings settings)
+    {
+        SetSeed(settings.seed);
+        SetFrequency(settings.frequency);
+        SetInterp(settings.interp);
+        SetNoiseType(settings.noiseType);
+
+        SetFractalOctaves(settings.octaves);
+        SetFractalLacunarity(settings.lacunarity);
+        SetFractalGain(settings.gain);
+        SetFractalType(settings.fractalType);
+
+        SetCellularDistanceFunction(settings.cellularDistanceFunction);
+        SetCellularReturnType(settings.cellularReturnType);
+        SetCellularJitter(settings.cellularJitter);
+        SetCellularDistance2Indicies(settings.cellularDistanceIndex0, settings.cellularDistanceIndex1);
+
+        if (settings.cellularNoiseLookup)
+            SetCellularNoiseLookup(settings.cellularNoiseLookup.fastNoise);
+
+        SetGradientPerturbAmp(settings.gradientPerturbAmp);
+    }
+
 	public FastNoise(int seed = 1337)
 	{
 		m_seed = seed;

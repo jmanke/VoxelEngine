@@ -1,0 +1,107 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fdc12efae8e3084fb4775b9cb0542b3, type: 3}
+  m_Name: AsteroidA
+  m_EditorClassIdentifier: 
+  dimensions: {x: 5, y: 5, z: 5}
+  blockSize: 16
+  noiseLayers:
+  - enabled: 1
+    useLayerAsMask: 0
+    maskingLayer: 0
+    comparator: 0
+    compareAgainst: 0
+    overrideValue: 0
+    ignoreValue: 0
+    noiseSettings:
+      filterType: 1
+      noiseName: Default Noise
+      invertValue: 0
+      centre: {x: 40, y: 40, z: 40}
+      radius: 30
+      amplitude: 10
+      strength: 1
+      seed: 1337
+      frequency: 0.03
+      interp: 2
+      noiseType: 4
+      octaves: 3
+      lacunarity: 2
+      gain: 0.5
+      fractalType: 0
+      cellularDistanceFunction: 0
+      cellularReturnType: 0
+      cellularNoiseLookup: {fileID: 0}
+      cellularDistanceIndex0: 0
+      cellularDistanceIndex1: 1
+      cellularJitter: 0.45
+      gradientPerturbAmp: 1
+  - enabled: 1
+    useLayerAsMask: 0
+    maskingLayer: 0
+    comparator: 0
+    compareAgainst: 0
+    overrideValue: 0
+    ignoreValue: 1
+    noiseSettings:
+      filterType: 1
+      noiseName: Default Noise
+      invertValue: 1
+      centre: {x: 40, y: 40, z: 40}
+      radius: 25
+      amplitude: 5
+      strength: 1
+      seed: 1337
+      frequency: 0.06
+      interp: 2
+      noiseType: 4
+      octaves: 3
+      lacunarity: 2
+      gain: 0.5
+      fractalType: 0
+      cellularDistanceFunction: 0
+      cellularReturnType: 0
+      cellularNoiseLookup: {fileID: 0}
+      cellularDistanceIndex0: 0
+      cellularDistanceIndex1: 1
+      cellularJitter: 0.45
+      gradientPerturbAmp: 1
+  - enabled: 1
+    useLayerAsMask: 1
+    maskingLayer: 1
+    comparator: 0
+    compareAgainst: 0
+    overrideValue: 1
+    ignoreValue: 0
+    noiseSettings:
+      filterType: 0
+      noiseName: Default Noise
+      invertValue: 0
+      centre: {x: 40, y: 40, z: 40}
+      radius: 20
+      amplitude: 0
+      strength: 1
+      seed: 1337
+      frequency: 0.06
+      interp: 2
+      noiseType: 4
+      octaves: 3
+      lacunarity: 2
+      gain: 0.5
+      fractalType: 0
+      cellularDistanceFunction: 0
+      cellularReturnType: 0
+      cellularNoiseLookup: {fileID: 0}
+      cellularDistanceIndex0: 0
+      cellularDistanceIndex1: 1
+      cellularJitter: 0.45
+      gradientPerturbAmp: 1

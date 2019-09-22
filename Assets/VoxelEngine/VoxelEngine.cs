@@ -7,9 +7,8 @@ namespace Toast.Voxels
 {
     public class VoxelEngine : MonoBehaviour
     {
-        public Vector3Int dim;
-        public int blockSize;
         public Material mat;
+        public VoxelObjectSettings voxelObjectSettings;
 
         /// <summary>
         /// Queue to update blocks
@@ -37,7 +36,13 @@ namespace Toast.Voxels
 
         public void Start()
         {
-            voxelObject = new VoxelObject(dim.x, dim.y, dim.z, blockSize, this);
+            Regenerate();
+        }
+
+        public void Regenerate()
+        {
+            voxelObject?.Destroy();
+            voxelObject = new VoxelObject(voxelObjectSettings, this);
 
             System.Threading.ThreadPool.QueueUserWorkItem(o =>
             {
