@@ -8,6 +8,7 @@ namespace Toast.Voxels
     public class VoxelEngine : MonoBehaviour
     {
         public Material mat;
+        public bool blockyVoxels = true;
         public VoxelObjectSettings voxelObjectSettings;
 
         /// <summary>

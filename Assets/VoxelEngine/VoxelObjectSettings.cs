@@ -9,6 +9,7 @@ namespace Toast.Voxels
     {
         public Vector3Int dimensions = new Vector3Int(1,1,1);
         public int blockSize = 16;
+        public NoiseSettings mineralNoiseSettings;
         public NoiseLayer[] noiseLayers;
 
         [System.Serializable]

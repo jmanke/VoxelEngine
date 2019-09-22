@@ -26,6 +26,7 @@ namespace Toast.Voxels
         private VoxelEngine voxelEngine;
         private VoxelObjectSettings settings;
         private INoiseFilter[] noiseFilters;
+        private MineralNoiseFilter mineralNoiseFilter;
 
         public VoxelObject(VoxelObjectSettings settings, VoxelEngine voxelEngine)
         {
@@ -46,6 +47,7 @@ namespace Toast.Voxels
 
             this.voxelEngine = voxelEngine;
 
+            mineralNoiseFilter = new MineralNoiseFilter(settings.mineralNoiseSettings);
             noiseFilters = new INoiseFilter[settings.noiseLayers.Length];
 
             for (int i = 0; i < noiseFilters.Length; i++)
@@ -279,8 +281,8 @@ namespace Toast.Voxels
                     {
                         int ind = x + y * isoDimX + z * isoDimY * isoDimY;
                         float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
-                        isovalues[ind] = (isoval < 0) ? (sbyte)-1 : (sbyte)1; /*FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));*/
-                        materialValues[ind] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
+                        isovalues[ind] = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
+                        materialValues[ind] = (mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
                     }
                 }
             }
