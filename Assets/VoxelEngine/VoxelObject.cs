@@ -217,50 +217,6 @@ namespace Toast.Voxels
             return false;
         }
 
-        public void DeleteClosestVoxel(Vector3 worldPos)
-        {
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
-            int xPos = (int)origin.x;
-            int yPos = (int)origin.y;
-            int zPos = (int)origin.z;
-
-            // get closest filled voxel
-
-            bool foundClosest = false;
-            float closestDist = float.MaxValue;
-            int xClosest = 0;
-            int yClosest = 0;
-            int zClosest = 0;
-
-            for (int x = xPos - 1; x < xPos + 2; x++)
-            {
-                for (int y = yPos - 1; y < yPos + 2; y++)
-                {
-                    for (int z = zPos - 1; z < zPos + 2; z++)
-                    {
-                        if (SafeIsovalueAt(x, y, z, out sbyte isovalue) && isovalue == -1)
-                        {
-                            var dist = Vector3.Distance(origin, new Vector3(x, y, z));
-
-                            if (dist < closestDist)
-                            {
-                                closestDist = dist;
-                                foundClosest = true;
-                                xClosest = x;
-                                yClosest = y;
-                                zClosest = z;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (foundClosest)
-            {
-                UpdateIsovalue(xClosest, yClosest, zClosest, 1);
-            }
-        }
-
         public void FillVoxel(Vector3 worldPos)
         {
             var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
@@ -269,6 +225,7 @@ namespace Toast.Voxels
             int zPos = (int)origin.z;
 
             UpdateIsovalue(xPos, yPos, zPos, -1);
+            materialValues[xPos + yPos * isoDimX + zPos * isoDimY * isoDimY] = 1;
         }
 
         public void DeleteVoxel(Vector3 worldPos)
