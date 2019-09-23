@@ -19,7 +19,7 @@ namespace Toast.Voxels
         public float Evaluate(float x, float y, float z)
         {
             float dist = Vector3.Distance(settings.centre, new Vector3(x, y, z));
-            float val = noise.GetSimplex(x, y, z);
+            float val = noise.GetNoise(x, y, z);
             return Mathf.Clamp(dist - settings.radius + val * settings.amplitude, -1f, 1f);
         }
     }

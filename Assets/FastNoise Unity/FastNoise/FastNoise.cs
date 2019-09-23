@@ -82,15 +82,15 @@ public class FastNoise
         SetFractalGain(settings.gain);
         SetFractalType(settings.fractalType);
 
-        SetCellularDistanceFunction(settings.cellularDistanceFunction);
-        SetCellularReturnType(settings.cellularReturnType);
-        SetCellularJitter(settings.cellularJitter);
-        SetCellularDistance2Indicies(settings.cellularDistanceIndex0, settings.cellularDistanceIndex1);
+        //SetCellularDistanceFunction(settings.cellularDistanceFunction);
+        //SetCellularReturnType(settings.cellularReturnType);
+        //SetCellularJitter(settings.cellularJitter);
+        //SetCellularDistance2Indicies(settings.cellularDistanceIndex0, settings.cellularDistanceIndex1);
 
-        if (settings.cellularNoiseLookup)
-            SetCellularNoiseLookup(settings.cellularNoiseLookup.fastNoise);
+        //if (settings.cellularNoiseLookup)
+        //    SetCellularNoiseLookup(settings.cellularNoiseLookup.fastNoise);
 
-        SetGradientPerturbAmp(settings.gradientPerturbAmp);
+        //SetGradientPerturbAmp(settings.gradientPerturbAmp);
     }
 
 	public FastNoise(int seed = 1337)

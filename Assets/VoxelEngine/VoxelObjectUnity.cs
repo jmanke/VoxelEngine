@@ -13,9 +13,11 @@ namespace Toast.Voxels
         /// </summary>
         /// <param name="origin"></param>
         /// <param name="radius"></param>
-        public void UpdateIsovalues(Vector3 origin, float radius, sbyte delta)
+        public void UpdateIsovalues(Vector3Int origin, float radius, sbyte delta)
         {
-            voxelObject.UpdateIsovalues(origin, radius, delta);
+            voxelObject.FillVoxel(origin);
+            //voxelObject.DeleteVoxel(origin);
+            //voxelObject.UpdateIsovalues(origin, radius, delta);
         }
     }
 }

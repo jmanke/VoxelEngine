@@ -5,7 +5,7 @@
 
 VoxelGrid::VoxelGrid(char* isovalues, char* materialIndices, int blockSize, int lod) : isovalues(isovalues), 
 																						materialIndices(materialIndices), 
-																						isoSize(blockSize + 3), 
+																						isoSize(blockSize + 1), 
 																						blockSize(blockSize), 
 																						spacing(pow(2.0, lod)){}
 

@@ -71,8 +71,8 @@ int ReuseCellInd(int x, int y, int z, int blockSize) {
 
 
 void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
-	int min = 1;
-	int max = grid.blockSize + 1;
+	int min = 0;
+	int max = grid.blockSize;
 	unsigned long triangleVertexIndex[15];
 	unsigned char reuseMask = 0;
 	std::vector<Cell> reuseCells;
@@ -81,7 +81,7 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 	for (int z = min; z < max; z++) {
 		for (int y = min; y < max; y++) {
 			for (int x = min; x < max; x++) {
-				Coord localCoord = Coord{ x-1.f, y-1.f, z-1.f };
+				Coord localCoord = Coord{ x, y, z };
 				auto cell = MakeCell(localCoord, grid);
 
 				// TODO: Do in the loop

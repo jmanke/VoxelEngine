@@ -18,7 +18,7 @@ namespace Toast.Voxels
 
         public float Evaluate(float x, float y, float z)
         {
-            return noise.GetSimplex(x, y, z);
+            return noise.GetNoise(x, y, z);
         }
     }
 }

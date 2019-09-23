@@ -11,6 +11,8 @@ namespace Toast.Voxels
         public bool blockyVoxels = true;
         public VoxelObjectSettings voxelObjectSettings;
 
+        public float rotateionSpeed = 2f;
+
         /// <summary>
         /// Queue to update blocks
         /// </summary>
@@ -44,6 +46,7 @@ namespace Toast.Voxels
         {
             voxelObject?.Destroy();
             voxelObject = new VoxelObject(voxelObjectSettings, this);
+            voxelObject.root.position = new Vector3(-100, 0, 0);
 
             System.Threading.ThreadPool.QueueUserWorkItem(o =>
             {
@@ -122,8 +125,9 @@ namespace Toast.Voxels
                         if (block.go == null)
                         {
                             block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
-                            block.go.transform.SetParent(voxelObject.root);
-                            block.go.transform.position = new Vector3(block.x, block.y, block.z) * block.size;
+                            block.go.transform.SetParent(voxelObject.blockRoot);
+                            block.go.transform.localPosition = new Vector3(block.x, block.y, block.z) * block.size;
+                            block.go.transform.localRotation = Quaternion.identity;
 
                             block.renderer = block.go.AddComponent<MeshRenderer>();
                             block.renderer.material = mat;
@@ -135,9 +139,6 @@ namespace Toast.Voxels
                         mesh.vertices = voxelMesh.vertices;
                         mesh.triangles = voxelMesh.triangles;
                         mesh.colors32 = voxelMesh.vertexMaterialIndices;
-
-                        //if (voxelMesh.vertexMaterialIndices.Length > 0)
-                        //    Debug.Log(voxelMesh.vertexMaterialIndices[0].r.ToString());
 
                         block.meshFilter.sharedMesh = mesh;
                         block.renderer.enabled = false;
@@ -178,6 +179,9 @@ namespace Toast.Voxels
             RenderMeshes();
 
             GenerateColliders();
+
+            voxelObject?.root.Rotate(Vector3.up, rotateionSpeed * Time.deltaTime);
+            voxelObject?.root.RotateAround(Vector3.zero, Vector3.up, rotateionSpeed * 0.2f * Time.deltaTime);
         }
     }
 }

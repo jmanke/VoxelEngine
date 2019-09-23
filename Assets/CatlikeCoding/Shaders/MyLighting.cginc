@@ -22,6 +22,7 @@ struct Interpolators
 	float2 uv : TEXCOORD0;
 	float3 normal : TEXCOORD1;
 	float3 worldPos : TEXCOORD2;
+	float3 localPos : TEXCOORD3;
 	SHADOW_COORDS(5)
 
 #if defined(VERTEXLIGHT_ON)
@@ -90,6 +91,7 @@ Interpolators MyVertexProgram(appdata v)
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.normal = normalize(o.normal);
 	o.color = v.color;
+	o.localPos = v.vertex;
 
 	TRANSFER_SHADOW(o);
 	ComputeVertexLightColor(o);
@@ -100,11 +102,11 @@ UNITY_DECLARE_TEX2DARRAY(_TexArr);
 
 float4 MyFragmentProgram(Interpolators  i) : SV_Target
 {
-	float3 dpdx = ddx(i.worldPos);
-	float3 dpdy = ddy(i.worldPos);
+	float3 dpdx = ddx(i.localPos);
+	float3 dpdy = ddy(i.localPos);
 	i.normal = normalize(cross(dpdy, dpdx));
 
-	float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+	float3 viewDir = normalize(_WorldSpaceCameraPos - i.localPos);
 
 	// Find our UVs for each axis based on world position of the fragment.
 	//half2 yUV = i.worldPos.xz;
@@ -161,15 +163,15 @@ float4 MyFragmentProgram(Interpolators  i) : SV_Target
 		dotZ += 0.02;
 	}
 
-	float ind = i.color.r * 255 + 0.5;// +0.5;
+	float ind = i.color.r * 255;// +0.5;
 	float3 albedo = 0;
 
 	if (dotX > dotY && dotX > dotZ)
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.zy, ind)); //xDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.zy, ind)); //xDiff;
 	else if (dotY > dotX && dotY > dotZ)
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xz, ind)); //yDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xz, ind)); //yDiff;
 	else
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xy, ind)); //zDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xy, ind)); //zDiff;
 
 	//float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
 	float3 specularTint;

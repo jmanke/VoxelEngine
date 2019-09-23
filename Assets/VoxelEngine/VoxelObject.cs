@@ -1,16 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Runtime.InteropServices;
+﻿using UnityEngine;
 
 namespace Toast.Voxels
 {
     public class VoxelObject
     {
+        public readonly Transform blockRoot;
         public readonly Transform root;
-
         public readonly Block[] blocks;
-
         public readonly int dimX;
         public readonly int dimY;
         public readonly int dimZ;
@@ -22,7 +18,6 @@ namespace Toast.Voxels
         private readonly sbyte[] isovalues;
         private readonly byte[] materialValues;
         private VoxelEngineWrapper voxelObjWrapper;
-        private FastNoiseSIMD fastNoise;
         private VoxelEngine voxelEngine;
         private VoxelObjectSettings settings;
         private INoiseFilter[] noiseFilters;
@@ -55,10 +50,16 @@ namespace Toast.Voxels
                 noiseFilters[i] = NoiseFilterFactory.CreateNoiseFilter(settings.noiseLayers[i].noiseSettings);
             }
 
-            root = new GameObject("Voxel Object").transform;
-            root.position = Vector3.zero;
+            blockRoot = new GameObject("Voxel Object").transform;
+            blockRoot.position = Vector3.zero;
+            blockRoot.rotation = Quaternion.identity;
+            blockRoot.gameObject.AddComponent<VoxelObjectUnity>().voxelObject = this;
+
+            root = new GameObject("Voxel Centre").transform;
+            root.position = blockRoot.TransformPoint(new Vector3(isoDimX, isoDimY, isoDimZ) / 2f);
             root.rotation = Quaternion.identity;
-            root.gameObject.AddComponent<VoxelObjectUnity>().voxelObject = this;
+
+            blockRoot.SetParent(root);
 
             for (int x = 0; x < dimX; x++)
             {
@@ -70,14 +71,19 @@ namespace Toast.Voxels
                     }
                 }
             }
-
-            fastNoise = new FastNoiseSIMD();
-            fastNoise.SetFrequency(0.02f);
         }
 
         public void Destroy()
         {
             Object.Destroy(root.gameObject);
+        }
+
+        public Vector3 Centre
+        {
+            get
+            {
+                return root.position;
+            }
         }
 
         /// <summary>
@@ -121,18 +127,18 @@ namespace Toast.Voxels
                 return;
 
             //local block coords
-            int blockX = x / blockSize;
-            int blockY = y / blockSize;
-            int blockZ = z / blockSize;
+            int blockX = x % blockSize;
+            int blockY = y % blockSize;
+            int blockZ = z % blockSize;
 
             byte neighbourFlags = 0;
 
-            if (blockX < 3) neighbourFlags += 1;
-            else if (blockX > blockSize - 3) neighbourFlags += 8;
-            if (blockY < 3) neighbourFlags += 2;
-            else if (blockY > blockSize - 3) neighbourFlags += 16;
-            if (blockZ < 3) neighbourFlags += 4;
-            else if (blockZ > blockSize - 3) neighbourFlags += 32;
+            if (blockX < 1) neighbourFlags += 1;
+            else if (blockX > blockSize - 1) neighbourFlags += 8;
+            if (blockY < 1) neighbourFlags += 2;
+            else if (blockY > blockSize - 1) neighbourFlags += 16;
+            if (blockZ < 1) neighbourFlags += 4;
+            else if (blockZ > blockSize - 1) neighbourFlags += 32;
 
             int blockIndX = x / blockSize;
             int blockIndY = y / blockSize;
@@ -179,13 +185,110 @@ namespace Toast.Voxels
         }
 
         /// <summary>
+        /// Safely gets an isovalue without worrying about index out of range exceptions. Returns false if no isovalue exists.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <param name="isovalue"></param>
+        /// <returns></returns>
+        public bool SafeIsovalueAt(int x, int y, int z, out sbyte isovalue)
+        {
+            if (x < 0 || x > isoDimX - 1 || y < 0 || y > isoDimY - 1 || z < 0 || z > isoDimZ - 1)
+            {
+                isovalue = -1;
+                return false;
+            }
+
+            isovalue = IsovalueAt(x, y, z);
+
+            return true;
+        }
+
+        public bool VoxelFilled(Vector3Int worldPos)
+        {
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+
+            if (SafeIsovalueAt((int)origin.x, (int)origin.y, (int)origin.z, out sbyte isovalue))
+            {
+                return isovalue == -1;
+            }
+
+            return false;
+        }
+
+        public void DeleteClosestVoxel(Vector3 worldPos)
+        {
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            int xPos = (int)origin.x;
+            int yPos = (int)origin.y;
+            int zPos = (int)origin.z;
+
+            // get closest filled voxel
+
+            bool foundClosest = false;
+            float closestDist = float.MaxValue;
+            int xClosest = 0;
+            int yClosest = 0;
+            int zClosest = 0;
+
+            for (int x = xPos - 1; x < xPos + 2; x++)
+            {
+                for (int y = yPos - 1; y < yPos + 2; y++)
+                {
+                    for (int z = zPos - 1; z < zPos + 2; z++)
+                    {
+                        if (SafeIsovalueAt(x, y, z, out sbyte isovalue) && isovalue == -1)
+                        {
+                            var dist = Vector3.Distance(origin, new Vector3(x, y, z));
+
+                            if (dist < closestDist)
+                            {
+                                closestDist = dist;
+                                foundClosest = true;
+                                xClosest = x;
+                                yClosest = y;
+                                zClosest = z;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (foundClosest)
+            {
+                UpdateIsovalue(xClosest, yClosest, zClosest, 1);
+            }
+        }
+
+        public void FillVoxel(Vector3 worldPos)
+        {
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            int xPos = (int)origin.x;
+            int yPos = (int)origin.y;
+            int zPos = (int)origin.z;
+
+            UpdateIsovalue(xPos, yPos, zPos, -1);
+        }
+
+        public void DeleteVoxel(Vector3 worldPos)
+        {
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            int xPos = (int)origin.x;
+            int yPos = (int)origin.y;
+            int zPos = (int)origin.z;
+
+            UpdateIsovalue(xPos, yPos, zPos, 1);
+        }
+
+        /// <summary>
         /// Updates isovalues in a sphere around the origin
         /// </summary>
         /// <param name="origin">Origin in world space</param>
         /// <param name="radius"></param>
-        public void UpdateIsovalues(Vector3 origin, float radius, sbyte delta)
+        public void UpdateIsovalues(Vector3 worldPos, float radius, sbyte delta)
         {
-            origin = root.worldToLocalMatrix * origin;
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);//blockRoot.InverseTransformPoint(worldPos);//blockRoot.worldToLocalMatrix * origin;
 
             for (int x = (int)(origin.x - radius); x < (int)(origin.x + radius); x++)
             {
@@ -202,8 +305,8 @@ namespace Toast.Voxels
                         if (z < 0) continue;
                         if (z > isoDimZ - 1) break;
 
-                        //if (Vector3.Distance(origin, new Vector3(x, y, z)) < radius)
-                        //{
+                        if (Vector3.Distance(origin, new Vector3(x, y, z)) <= radius)
+                        {
                             int res = IsovalueAt(x, y, z) + delta;
 
                             if (res < -128)
@@ -212,7 +315,7 @@ namespace Toast.Voxels
                                 res = 127;
 
                             UpdateIsovalue(x, y, z, (sbyte)res);
-                        //}
+                        }
                     }
                 }
             }
@@ -261,18 +364,32 @@ namespace Toast.Voxels
             return val;
         }
 
+        private byte CalculateBlockType(float x, float y, float z)
+        {
+            float noiseVal = mineralNoiseFilter.Evaluate(x, y, z);
+            byte blockType;
+
+            if (noiseVal >= settings.copperRange.x && noiseVal < settings.copperRange.y)
+            {
+                blockType = (byte)MineralType.COPPER;
+            }
+            else if (noiseVal >= settings.ironRange.x && noiseVal < settings.ironRange.y)
+            {
+                blockType = (byte)MineralType.IRON;
+            }
+            else
+            {
+                blockType = (byte)MineralType.STONE;
+            }
+
+            return blockType;
+        }
+
         /// <summary>
         /// TODO: generate noise somewhere else
         /// </summary>
         public void GenerateIsovalues()
         {
-            //var noiseFilter = new AsteroidANoiseProfile();
-            //noiseFilter.centre = new Vector3(isoDimX, isoDimY, isoDimZ) / 2f;
-            //noiseFilter.radius = 20f;
-            //noiseFilter.amp = 0.5f;
-            //noiseFilter.noise.frequency = 0.2f;
-            //noiseFilter.noise.SaveSettings();
-
             for (int x = 0; x < isoDimX; x++)
             {
                 for (int y = 0; y < isoDimY; y++)
@@ -282,31 +399,16 @@ namespace Toast.Voxels
                         int ind = x + y * isoDimX + z * isoDimY * isoDimY;
                         float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
                         isovalues[ind] = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
-                        materialValues[ind] = (mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
+
+                        materialValues[ind] = CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
                     }
                 }
             }
-
-            //float[] noiseSet = fastNoise.GetNoiseSet(0, 0, 0, isoDimX, isoDimY, isoDimZ);
-            //int index = 0;
-
-            //for (int x = 0; x < isoDimX; x++)
-            //{
-            //    for (int y = 0; y < isoDimY; y++)
-            //    {
-            //        for (int z = 0; z < isoDimZ; z++)
-            //        {
-            //            float isoval = noiseSet[index++];
-            //            isovalues[x + y * isoDimX + z * isoDimY * isoDimY] =  (isoval < 0) ? (sbyte)-1 : (sbyte)1; //FloatToSbyte(isoval);
-            //            materialValues[x + y * isoDimX + z * isoDimY * isoDimY] = (Mathf.Abs(isoval) < 0.25f) ? (byte)0 : (byte)1;
-            //        }
-            //    }
-            //}
         }
 
         public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)
         {
-            int isoSize = block.size + 3;
+            int isoSize = block.size + 1;
 
             for (int x = 0, isoX = block.x * blockSize; x < isoSize; x++, isoX++)
             {
@@ -340,7 +442,7 @@ namespace Toast.Voxels
         {
             int numVoxels = blockSize * blockSize * blockSize;
             int maxTriCount = numVoxels * 5;
-            int numIsovalues = (blockSize + 3) * (blockSize + 3) * (blockSize + 3);
+            int numIsovalues = (blockSize + 1) * (blockSize + 1) * (blockSize + 1);
 
             var isovalues = new sbyte[numIsovalues];
             var materialIndicies = new byte[numIsovalues];

@@ -14,29 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dimensions: {x: 4, y: 4, z: 4}
   blockSize: 16
+  copperRange: {x: 0.4, y: 1}
+  ironRange: {x: -1, y: -0.4}
   mineralNoiseSettings:
     filterType: 0
+    noiseType: 3
+    fractalType: 0
     noiseName: Default Noise
     invertValue: 0
     centre: {x: 0, y: 0, z: 0}
     radius: 50
     amplitude: 1
     strength: 1
-    seed: 1337
-    frequency: 0.05
+    seed: 97
+    frequency: 0.02
     interp: 2
-    noiseType: 4
     octaves: 3
     lacunarity: 2
     gain: 0.5
-    fractalType: 0
-    cellularDistanceFunction: 0
-    cellularReturnType: 0
-    cellularNoiseLookup: {fileID: 0}
-    cellularDistanceIndex0: 0
-    cellularDistanceIndex1: 1
-    cellularJitter: 0.45
-    gradientPerturbAmp: 1
   noiseLayers:
   - enabled: 1
     useLayerAsMask: 0
@@ -47,27 +42,20 @@ MonoBehaviour:
     ignoreValue: 0
     noiseSettings:
       filterType: 1
+      noiseType: 4
+      fractalType: 2
       noiseName: Default Noise
       invertValue: 0
       centre: {x: 32, y: 32, z: 32}
       radius: 20
-      amplitude: 15
+      amplitude: 10
       strength: 1
       seed: 1337
       frequency: 0.03
-      interp: 2
-      noiseType: 4
-      octaves: 3
-      lacunarity: 2
-      gain: 0.5
-      fractalType: 0
-      cellularDistanceFunction: 0
-      cellularReturnType: 0
-      cellularNoiseLookup: {fileID: 0}
-      cellularDistanceIndex0: 0
-      cellularDistanceIndex1: 1
-      cellularJitter: 0.45
-      gradientPerturbAmp: 1
+      interp: 0
+      octaves: 9
+      lacunarity: 1
+      gain: 1
   - enabled: 1
     useLayerAsMask: 0
     maskingLayer: 0
@@ -77,6 +65,8 @@ MonoBehaviour:
     ignoreValue: 1
     noiseSettings:
       filterType: 1
+      noiseType: 4
+      fractalType: 0
       noiseName: Default Noise
       invertValue: 0
       centre: {x: 32, y: 32, z: 32}
@@ -86,18 +76,9 @@ MonoBehaviour:
       seed: 1337
       frequency: 0.06
       interp: 2
-      noiseType: 4
       octaves: 3
       lacunarity: 2
       gain: 0.5
-      fractalType: 0
-      cellularDistanceFunction: 0
-      cellularReturnType: 0
-      cellularNoiseLookup: {fileID: 0}
-      cellularDistanceIndex0: 0
-      cellularDistanceIndex1: 1
-      cellularJitter: 0.45
-      gradientPerturbAmp: 1
   - enabled: 1
     useLayerAsMask: 1
     maskingLayer: 1
@@ -107,6 +88,8 @@ MonoBehaviour:
     ignoreValue: 0
     noiseSettings:
       filterType: 0
+      noiseType: 4
+      fractalType: 0
       noiseName: Default Noise
       invertValue: 0
       centre: {x: 32, y: 32, z: 32}
@@ -116,15 +99,6 @@ MonoBehaviour:
       seed: 1337
       frequency: 0.06
       interp: 2
-      noiseType: 4
       octaves: 3
       lacunarity: 2
       gain: 0.5
-      fractalType: 0
-      cellularDistanceFunction: 0
-      cellularReturnType: 0
-      cellularNoiseLookup: {fileID: 0}
-      cellularDistanceIndex0: 0
-      cellularDistanceIndex1: 1
-      cellularJitter: 0.45
-      gradientPerturbAmp: 1
