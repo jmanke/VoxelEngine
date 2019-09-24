@@ -362,7 +362,10 @@ namespace Toast.Voxels
         /// </summary>
         public void GenerateIsovalues()
         {
-            int c = 0;
+            int stone = 0;
+            int copper = 0;
+            int iron = 0;
+            int empty = 0;
 
             for (int x = 0; x < isoDimX; x++)
             {
@@ -372,15 +375,19 @@ namespace Toast.Voxels
                     {
                         int ind = x + y * isoDimX + z * isoDimY * isoDimY;
                         float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
-                        isovalues[ind] = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
+                        sbyte isobyte = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
+                        isovalues[ind] = isobyte; 
 
-                        materialValues[ind] = (isovalues[ind] == -1) ? (byte)MineralType.EMPTY : CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
-                        if (materialValues[ind] == (byte)MineralType.EMPTY) c++;
+                        materialValues[ind] = (isobyte == -1) ? (byte)MineralType.EMPTY : CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
+                        if (materialValues[ind] == (byte)MineralType.EMPTY) empty++;
+                        if (materialValues[ind] == (byte)MineralType.STONE) stone++;
+                        if (materialValues[ind] == (byte)MineralType.COPPER) copper++;
+                        if (materialValues[ind] == (byte)MineralType.IRON) iron++;
                     }
                 }
             }
 
-            Debug.Log("Num empty = " + c);
+            Debug.Log($"Iron = {iron}, Copper = {copper}");
         }
 
         public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)
@@ -408,7 +415,7 @@ namespace Toast.Voxels
 
                         int filledInd = x + y * isoSize + z * isoSize * isoSize;
                         int ind = isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY;
-                        filledIsoValues[filledInd] = isovalues[isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY];
+                        filledIsoValues[filledInd] = isovalues[ind];
                         filledMaterialIndices[filledInd] = materialValues[ind];
                     }
                 }

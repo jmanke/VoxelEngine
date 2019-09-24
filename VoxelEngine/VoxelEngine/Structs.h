@@ -22,7 +22,7 @@ struct Cell {
 	//glm::vec3 localPosition;
 	// point to vertex position in array
 	int reuseVertexIndicies[4];
-	int materialIndex;
+	unsigned char materialIndex;
 
 	static unsigned long generateCaseCode(const char corner[8]) {
 		return ((corner[0] >> 7) & 0x01)

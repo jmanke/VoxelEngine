@@ -4,20 +4,28 @@
 #include <vector>
 #include <string>
 
+// logging
+
+#include "stdio.h"
+#include <sstream>
+
+// end logging
 
 static const Coord UNIT_X = Coord(1.f, 0.f, 0.f);
 static const Coord UNIT_Y = Coord(0.f, 1.f, 0.f);
 static const Coord UNIT_Z = Coord(0.f, 0.f, 1.f);
 static const char EMPTY_VOXEL = 255;
 
+FILE* pFile;
 
 VoxelObject::VoxelObject(int dimX, int dimY, int dimZ, int blockSize) {
-
+	std::remove("DebugLog\\logFile.txt");
+	pFile = fopen("DebugLog\\logFile.txt", "a");
 }
 
 
 VoxelObject::~VoxelObject() {
-
+	fclose(pFile);
 }
 
 
@@ -136,14 +144,23 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 					//	}
 					//}
 
-					char v0Mat = grid.MaterialIndexAt(p0);
-					char v1Mat = grid.MaterialIndexAt(p1);
+					const auto v0Mat = grid.MaterialIndexAt(p0);
+					const auto v1Mat = grid.MaterialIndexAt(p1);
 
-					if (v0Mat == 255 || v1Mat == 255) {
-						exit(0);
+					//std::string log = "m0: " + std::to_string(v0Mat) + " m1: " + std::to_string(v1Mat);
+					//fprintf(pFile, "%s\n", log);
+
+					unsigned char matInd = (d0 > 0) ? grid.MaterialIndexAt(p0) : grid.MaterialIndexAt(p1);
+
+					if (v0Mat == 1) {
+						std::string log = "matInd: " + std::to_string(v0Mat);
+						fprintf(pFile, "%s\n", log);
 					}
 
-					char matInd = (v0Mat == 255) ? v1Mat : v0Mat;
+					if (v1Mat == 1) {
+						std::string log = "matInd: " + std::to_string(v1Mat);
+						fprintf(pFile, "%s\n", log);
+					}
 
 					if ((direction & reuseMask) != direction) {
 						long u = 0x0100 - t;

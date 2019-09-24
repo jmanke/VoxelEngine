@@ -19,7 +19,7 @@ struct Interpolators
 {
 	float4 pos : SV_POSITION;
 	float4 color : COLOR;
-	float2 uv : TEXCOORD0;
+	//float2 uv : TEXCOORD0;
 	float3 normal : TEXCOORD1;
 	float3 worldPos : TEXCOORD2;
 	float3 localPos : TEXCOORD3;
@@ -29,13 +29,15 @@ struct Interpolators
 	float3 vertexLightColor : TEXCOORD4;
 #endif
 };
+//SamplerState sampler_MainTex;
+
 
 float4 _Tint;
 float _Metallic;
-sampler2D _MainTex;
-float4 _MainTex_ST;
-sampler2D _SecondaryTex;
-float4 SecondaryTex_ST;
+//sampler2D _MainTex;
+//float4 _MainTex_ST;
+//sampler2D _SecondTex;
+//float4 _SecondTex_ST;
 float _Smoothness;
 
 UnityLight CreateLight(Interpolators  i) {
@@ -87,7 +89,7 @@ Interpolators MyVertexProgram(appdata v)
 	Interpolators  o;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
-	o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+	//o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.normal = normalize(o.normal);
 	o.color = v.color;
@@ -99,6 +101,10 @@ Interpolators MyVertexProgram(appdata v)
 }
 
 UNITY_DECLARE_TEX2DARRAY(_TexArr);
+//
+//UNITY_DECLARE_TEX2D(_MainTex);
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_SecondTex);
+//UNITY_DECLARE_TEX2D_NOSAMPLER(_ThirdTex);
 
 float4 MyFragmentProgram(Interpolators  i) : SV_Target
 {
@@ -107,38 +113,6 @@ float4 MyFragmentProgram(Interpolators  i) : SV_Target
 	i.normal = normalize(cross(dpdy, dpdx));
 
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.localPos);
-
-	// Find our UVs for each axis based on world position of the fragment.
-	//half2 yUV = i.worldPos.xz;
-	//half2 xUV = i.worldPos.zy;
-	//half2 zUV = i.worldPos.xy;
-	// Now do texture samples from our diffuse map with each of the 3 UV set's we've just made.
-
-	//half3 yDiff;
-	//half3 xDiff;
-	//half3 zDiff;
-
-	//yDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(yUV, ind));
-	//xDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(xUV, ind));
-	//zDiff = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(zUV, ind));
-
-	//if (i.color.r < 1.5/255) {
-	//	yDiff = tex2D(_MainTex, yUV);
-	//	xDiff = tex2D(_MainTex, xUV);
-	//	zDiff = tex2D(_MainTex, zUV);
-	//}
-	//else {
-	//	yDiff = tex2D(_SecondaryTex, yUV);
-	//	xDiff = tex2D(_SecondaryTex, xUV);
-	//	zDiff = tex2D(_SecondaryTex, zUV);
-	//}
-	// Get the absolute value of the world normal.
-	// Put the blend weights to the power of BlendSharpness, the higher the value, 
-	// the sharper the transition between the planar maps will be.
-	//half3 blendWeights = pow(abs(i.normal), 0.5);
-	// Divide our blend mask by the sum of it's components, this will make x+y+z=1
-	//blendWeights = blendWeights / (blendWeights.x + blendWeights.y + blendWeights.z);
-	// Finally, blend together all three samples based on the blend mask.
 
 	float dotX = abs(dot(float3(1, 0, 0), i.normal));
 	float dotY = abs(dot(float3(0, 1, 0), i.normal));
@@ -163,8 +137,8 @@ float4 MyFragmentProgram(Interpolators  i) : SV_Target
 		dotZ += 0.02;
 	}
 
-	float ind = i.color.r * 255;// +0.5;
-	float3 albedo = 0;
+	float ind = i.color.r * 255;// +0.1;// +0.5;
+	float3 albedo = 0;// _MainTex.Sample(sampler_MainTex, i.localPos.zy);
 
 	if (dotX > dotY && dotX > dotZ)
 		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.zy, ind)); //xDiff;
