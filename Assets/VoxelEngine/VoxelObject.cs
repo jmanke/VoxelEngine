@@ -205,27 +205,67 @@ namespace Toast.Voxels
             return true;
         }
 
+        public bool VoxelFilled(int x, int y, int z)
+        {
+            if (SafeIsovalueAt(x, y, z, out sbyte isovalue))
+            {
+                return isovalue == 1;
+            }
+
+            return true;
+        }
+
         public bool VoxelFilled(Vector3Int worldPos)
         {
             var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
-
-            if (SafeIsovalueAt((int)origin.x, (int)origin.y, (int)origin.z, out sbyte isovalue))
-            {
-                return isovalue == -1;
-            }
-
-            return false;
+            return VoxelFilled((int)origin.x, (int)origin.y, (int)origin.z);
         }
 
-        public void FillVoxel(Vector3 worldPos)
+        private int CoordToIsoInd(int x, int y, int z)
         {
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
-            int xPos = (int)origin.x;
-            int yPos = (int)origin.y;
-            int zPos = (int)origin.z;
+            return x + y * isoDimX + z * isoDimY * isoDimY;
+        }
 
-            UpdateIsovalue(xPos, yPos, zPos, -1);
-            materialValues[xPos + yPos * isoDimX + zPos * isoDimY * isoDimY] = 1;
+        private Vector3Int GetClosestFilledVoxel(int x, int y, int z)
+        {
+            float closestDist = float.MaxValue;
+            var origin = new Vector3(x, y, z);
+            var closestVoxelInd = new Vector3Int();
+
+            for (int i = x - 1; i < x + 2; i++)
+            {
+                for (int j = y - 1; j < y + 2; j++)
+                {
+                    for (int k = z - 1; k < z + 2; k++)
+                    {
+                        if (VoxelFilled(i, j, k))
+                        {
+                            var dist = Vector3.Distance(origin, new Vector3(i, j, k));
+                            if (dist < closestDist)
+                            {
+                                closestDist = dist;
+                                closestVoxelInd = new Vector3Int(i, j, k);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return closestVoxelInd;
+        }
+
+        public void FillVoxel(Vector3 worldPos, MineralType mineralType)
+        {
+            // TODO: refactor this, very messy. Only for testing purposes currently
+            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            int x = (int)origin.x;
+            int y = (int)origin.y;
+            int z = (int)origin.z;
+            //var intOrigin = new Vector3Int(x, y, z);
+
+            UpdateIsovalue(x, y, z, 1);
+            byte matInd = (byte)mineralType;
+            materialValues[CoordToIsoInd(x, y, z)] = matInd;
         }
 
         public void DeleteVoxel(Vector3 worldPos)
@@ -235,48 +275,23 @@ namespace Toast.Voxels
             int yPos = (int)origin.y;
             int zPos = (int)origin.z;
 
-            UpdateIsovalue(xPos, yPos, zPos, 1);
+            UpdateIsovalue(xPos, yPos, zPos, -1);
+            materialValues[CoordToIsoInd(xPos, yPos, zPos)] = (byte)MineralType.EMPTY;
         }
 
-        /// <summary>
-        /// Updates isovalues in a sphere around the origin
-        /// </summary>
-        /// <param name="origin">Origin in world space</param>
-        /// <param name="radius"></param>
-        public void UpdateIsovalues(Vector3 worldPos, float radius, sbyte delta)
-        {
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);//blockRoot.InverseTransformPoint(worldPos);//blockRoot.worldToLocalMatrix * origin;
+        //public void ModifyVoxel(Vector3 worldPos, sbyte delta)
+        //{
+        //    var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+        //    int x = (int)origin.x;
+        //    int y = (int)origin.y;
+        //    int z = (int)origin.z;
 
-            for (int x = (int)(origin.x - radius); x < (int)(origin.x + radius); x++)
-            {
-                if (x < 0) continue;
-                if (x > isoDimX - 1) break;
-
-                for (int y = (int)(origin.y - radius); y < (int)(origin.y + radius); y++)
-                {
-                    if (y < 0) continue;
-                    if (y > isoDimY - 1) break;
-
-                    for (int z = (int)(origin.z - radius); z < (int)(origin.z + radius); z++)
-                    {
-                        if (z < 0) continue;
-                        if (z > isoDimZ - 1) break;
-
-                        if (Vector3.Distance(origin, new Vector3(x, y, z)) <= radius)
-                        {
-                            int res = IsovalueAt(x, y, z) + delta;
-
-                            if (res < -128)
-                                res = -128;
-                            else if (res > 127)
-                                res = 127;
-
-                            UpdateIsovalue(x, y, z, (sbyte)res);
-                        }
-                    }
-                }
-            }
-        }
+        //    if (SafeIsovalueAt(x, y, z, out sbyte isovalue))
+        //    {
+        //        sbyte val = (sbyte)Mathf.Clamp(isovalue + delta, -128, 127);
+        //        UpdateIsovalue(x, y, z, val);
+        //    }
+        //}
 
         public float CalculateIsovalue(float x, float y, float z)
         {
@@ -347,6 +362,8 @@ namespace Toast.Voxels
         /// </summary>
         public void GenerateIsovalues()
         {
+            int c = 0;
+
             for (int x = 0; x < isoDimX; x++)
             {
                 for (int y = 0; y < isoDimY; y++)
@@ -357,10 +374,13 @@ namespace Toast.Voxels
                         float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
                         isovalues[ind] = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
 
-                        materialValues[ind] = CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
+                        materialValues[ind] = (isovalues[ind] == -1) ? (byte)MineralType.EMPTY : CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
+                        if (materialValues[ind] == (byte)MineralType.EMPTY) c++;
                     }
                 }
             }
+
+            Debug.Log("Num empty = " + c);
         }
 
         public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)

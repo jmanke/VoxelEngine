@@ -82,7 +82,7 @@ MonoBehaviour:
   - enabled: 1
     useLayerAsMask: 1
     maskingLayer: 1
-    comparator: 1
+    comparator: 0
     compareAgainst: 0
     overrideValue: 1
     ignoreValue: 0

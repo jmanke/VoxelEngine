@@ -14,7 +14,7 @@ extern "C" {
 		delete instance;
 	}
 
-	LIBRARY_EXPORT void ComputeMesh(VoxelObject* instance, char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, char* materialIndices, int* vertexMaterialIndices)
+	LIBRARY_EXPORT void ComputeMesh(VoxelObject* instance, char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, unsigned char* materialIndices, int* vertexMaterialIndices)
 	{
 		instance->ComputeMesh(isovalues, blockSize, lod, vertices, vertexCount, triangles, triangleCount, materialIndices, vertexMaterialIndices);
 	}

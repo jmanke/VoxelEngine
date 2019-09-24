@@ -3,7 +3,7 @@
 #include<cmath>
 
 
-VoxelGrid::VoxelGrid(char* isovalues, char* materialIndices, int blockSize, int lod) : isovalues(isovalues), 
+VoxelGrid::VoxelGrid(char* isovalues, unsigned char* materialIndices, int blockSize, int lod) : isovalues(isovalues),
 																						materialIndices(materialIndices), 
 																						isoSize(blockSize + 1), 
 																						blockSize(blockSize), 
@@ -35,7 +35,7 @@ char VoxelGrid::IsovalueAt(Coord coord) const {
 	return IsovalueAt((int)coord.x, (int)coord.y, (int)coord.z);
 }
 
-int VoxelGrid::MaterialIndexAt(int x, int y, int z) const {
+unsigned char VoxelGrid::MaterialIndexAt(int x, int y, int z) const {
 	if (x < 0)
 		x = 0;
 	else if (x == isoSize - 1)
@@ -52,7 +52,7 @@ int VoxelGrid::MaterialIndexAt(int x, int y, int z) const {
 	return materialIndices[x + y * isoSize + z * isoSize * isoSize];
 }
 
-int VoxelGrid::MaterialIndexAt(Coord coord) const {
+unsigned char VoxelGrid::MaterialIndexAt(Coord coord) const {
 	return MaterialIndexAt((int)coord.x, (int)coord.y, (int)coord.z);
 }
 

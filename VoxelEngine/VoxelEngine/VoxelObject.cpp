@@ -8,6 +8,7 @@
 static const Coord UNIT_X = Coord(1.f, 0.f, 0.f);
 static const Coord UNIT_Y = Coord(0.f, 1.f, 0.f);
 static const Coord UNIT_Z = Coord(0.f, 0.f, 1.f);
+static const char EMPTY_VOXEL = 255;
 
 
 VoxelObject::VoxelObject(int dimX, int dimY, int dimZ, int blockSize) {
@@ -55,7 +56,7 @@ Cell VoxelObject::MakeCell(const Coord& coord, const VoxelGrid& grid)
 }
 
 // TODO: Encode isovalues and materials in one int* where this information is stored as a Color32 in Unity. Example: isovalues stored in R channel and materials in the G channel
-void VoxelObject::ComputeMesh(char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, char* materialIndices, int* vertexMaterialIndices) {
+void VoxelObject::ComputeMesh(char* isovalues, int blockSize, int lod, glm::vec3* vertices, int* vertexCount, int* triangles, int* triangleCount, unsigned char* materialIndices, int* vertexMaterialIndices) {
 	auto mesh = Mesh(vertices, triangles, vertexMaterialIndices);
 	auto grid = VoxelGrid(isovalues, materialIndices, blockSize, lod);
 
@@ -119,23 +120,32 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 						t = 0;
 
 					glm::vec3 Q;
-					bool createVertex = false;
+					//bool createVertex = false;
 
-					// Vertex lies in the interior of the edge.
-					if ((t & 0x00FF) != 0) {
-						// check if preceeding cell exists
-						if ((direction & reuseMask) != direction) {
-							createVertex = true;
-						}
-					}
-					// Vertex lies on the endpoint of an edge (for -1, 1 points, this doesn't apply)
-					else {
-						if ((direction & reuseMask) != direction) {
-							createVertex = true;
-						}
+					//// Vertex lies in the interior of the edge.
+					//if ((t & 0x00FF) != 0) {
+					//	// check if preceeding cell exists
+					//	if ((direction & reuseMask) != direction) {
+					//		createVertex = true;
+					//	}
+					//
+					//// Vertex lies on the endpoint of an edge (for -1, 1 points, this doesn't apply)
+					//else {
+					//	if ((direction & reuseMask) != direction) {
+					//		createVertex = true;
+					//	}
+					//}
+
+					char v0Mat = grid.MaterialIndexAt(p0);
+					char v1Mat = grid.MaterialIndexAt(p1);
+
+					if (v0Mat == 255 || v1Mat == 255) {
+						exit(0);
 					}
 
-					if (createVertex) {
+					char matInd = (v0Mat == 255) ? v1Mat : v0Mat;
+
+					if ((direction & reuseMask) != direction) {
 						long u = 0x0100 - t;
 						Q = ((float)t * p0 + (float)u * p1) / 256.0f;
 
@@ -145,7 +155,12 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 
 						triangleVertexIndex[vertexIndex] = mesh.vertInd;
 						mesh.verticies[mesh.vertInd] = Q;
-						mesh.vertexMaterialIndicies[mesh.vertInd] = cell.materialIndex;
+
+						//if (matInd == 255) {
+						//	exit(0);
+						//}
+
+						mesh.vertexMaterialIndicies[mesh.vertInd] = matInd;//grid.MaterialIndexAt(Cell::getCornerCoord(grid.spacing, localCoord, 0));//cell.materialIndex;
 						mesh.vertInd++;
 					}
 					else {
@@ -164,7 +179,7 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 
 							triangleVertexIndex[vertexIndex] = mesh.vertInd;
 							mesh.verticies[mesh.vertInd] = Q;
-							mesh.vertexMaterialIndicies[mesh.vertInd] = cell.materialIndex;
+							mesh.vertexMaterialIndicies[mesh.vertInd] = matInd;// cell.materialIndex;
 							mesh.vertInd++;
 						}
 						else {
@@ -175,7 +190,7 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 				}
 
 				for (int i = 0; i < cellData.GetTriangleCount(); i++) {
-					for (int j = 0; j < 3; j++) {
+					for (int j = 2; j >= 0; j--) {
 						int triInd = i * 3 + j;
 						mesh.triangles[mesh.triInd] = triangleVertexIndex[cellData.vertexIndex[triInd]];
 						mesh.triInd++;

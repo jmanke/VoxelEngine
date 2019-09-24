@@ -6,17 +6,17 @@
 class VoxelGrid
 {
 public:
-	VoxelGrid(char* isovalues, char* materialIndices, int blockSize, int lod);
+	VoxelGrid(char* isovalues, unsigned char* materialIndices, int blockSize, int lod);
 	~VoxelGrid();
 
 	char IsovalueAt(int x, int y, int z) const;
 	char IsovalueAt(Coord coord) const;
 
-	int MaterialIndexAt(int x, int y, int z) const;
-	int MaterialIndexAt(Coord coord) const;
+	unsigned char MaterialIndexAt(int x, int y, int z) const;
+	unsigned char MaterialIndexAt(Coord coord) const;
 
 	const char* isovalues;
-	const char* materialIndices;
+	const unsigned char* materialIndices;
 	const int isoSize;
 	const int blockSize;
 	const int spacing;

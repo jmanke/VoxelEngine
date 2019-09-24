@@ -15,9 +15,20 @@ namespace Toast.Voxels
         /// <param name="radius"></param>
         public void UpdateIsovalues(Vector3Int origin, float radius, sbyte delta)
         {
-            voxelObject.FillVoxel(origin);
-            //voxelObject.DeleteVoxel(origin);
+            //voxelObject.ModifyVoxel(origin, delta);
+            //voxelObject.FillVoxel(origin);
+            voxelObject.DeleteVoxel(origin);
             //voxelObject.UpdateIsovalues(origin, radius, delta);
+        }
+
+        public void DeleteVoxel(Vector3Int origin)
+        {
+            voxelObject.DeleteVoxel(origin);
+        }
+
+        public void FillVoxel(Vector3Int origin, MineralType mineralType)
+        {
+            voxelObject.FillVoxel(origin, mineralType);
         }
     }
 }
