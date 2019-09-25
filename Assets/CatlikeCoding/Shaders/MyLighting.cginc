@@ -1,46 +1,7 @@
 #if !defined(LIGHTING_INCLUDED)
 #define LIGHTING_INCLUDED
-#include "UnityPBSLighting.cginc"
-#include "AutoLight.cginc"
 
-struct appdata
-{
-	float4 vertex : POSITION;
-	float3 normal: NORMAL;
-	float4 color : COLOR;
-	float2 uv : TEXCOORD0;
-};
-
-struct TriplanarUV {
-	float2 x, y, z;
-};
-
-struct InterpolatorsVertex 
-{
-	float4 pos : SV_POSITION;
-	float4 color : COLOR;
-	//float2 uv : TEXCOORD0;
-	float3 normal : TEXCOORD1;
-	float3 worldPos : TEXCOORD2;
-	float3 localPos : TEXCOORD3;
-	float2 barycentricCoordinates : TEXCOORD4;
-	SHADOW_COORDS(5)
-	float3 matInd : TEXCOORD6;
-
-#if defined(VERTEXLIGHT_ON)
-	float3 vertexLightColor : TEXCOORD4;
-#endif
-};
-//SamplerState sampler_MainTex;
-
-
-float4 _Tint;
-float _Metallic;
-//sampler2D _MainTex;
-//float4 _MainTex_ST;
-//sampler2D _SecondTex;
-//float4 _SecondTex_ST;
-float _Smoothness;
+#include "MyLightingInput.cginc"
 
 UnityLight CreateLight(InterpolatorsVertex  i) {
 	UnityLight light;
@@ -91,51 +52,31 @@ InterpolatorsVertex MyVertexProgram(appdata v)
 	InterpolatorsVertex  o;
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
-	o.normal = UnityObjectToWorldNormal(v.normal);
-	o.normal = normalize(o.normal);
 	o.color = v.color;
 	o.localPos = v.vertex;
-	o.barycentricCoordinates = float2(0, 0);
-	o.matInd = float3(0,0,0);
+	o.normal = UnityObjectToWorldNormal(v.normal);
+	o.normal = normalize(o.normal);
+#if defined(VOXEL_INCLUDED)
+	o.matInd = float3(0, 0, 0);
+#else
+	o.uv = v.uv;
+#endif
+#if defined(CUSTOM_GEOMETRY_INTERPOLATORS)
+	o.barycentricCoordinates = 0;
+#endif
 	TRANSFER_SHADOW(o);
 	ComputeVertexLightColor(o);
 	return o;
 }
 
-UNITY_DECLARE_TEX2DARRAY(_TexArr);
-
-[maxvertexcount(3)]
-void MyGeometryProgram(triangle InterpolatorsVertex i[3],
-	inout TriangleStream<InterpolatorsVertex> stream) {
-	float3 p0 = i[0].worldPos.xyz;
-	float3 p1 = i[1].worldPos.xyz;
-	float3 p2 = i[2].worldPos.xyz;
-
-	float3 triangleNormal = normalize(cross(p1 - p0, p2 - p0));
-
-	i[0].normal = triangleNormal;
-	i[1].normal = triangleNormal;
-	i[2].normal = triangleNormal;
-
-	i[0].barycentricCoordinates = float2(1, 0);
-	i[1].barycentricCoordinates = float2(0, 1);
-	i[2].barycentricCoordinates = float2(0, 0);
-
-	i[0].matInd = float3(i[0].color.r, i[1].color.r, i[2].color.r) * 255;
-	i[1].matInd = float3(i[0].color.r, i[1].color.r, i[2].color.r) * 255;
-	i[2].matInd = float3(i[0].color.r, i[1].color.r, i[2].color.r) * 255;
-
-	stream.Append(i[0]);
-	stream.Append(i[1]);
-	stream.Append(i[2]);
-}
+#if defined(VOXEL_INCLUDED)
+	UNITY_DECLARE_TEX2DARRAY(_TexArr);
+#else
+	sampler2D _MainTex;
+#endif
 
 float4 MyFragmentProgram(InterpolatorsVertex  i) : SV_Target
 {
-	//float3 dpdx = ddx(i.localPos);
-	//float3 dpdy = ddy(i.localPos);
-	//i.normal = normalize(cross(dpdy, dpdx));
-
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.localPos);
 
 	float dotX = abs(dot(float3(1, 0, 0), i.normal));
@@ -161,6 +102,9 @@ float4 MyFragmentProgram(InterpolatorsVertex  i) : SV_Target
 		dotZ += 0.02;
 	}
 
+	float3 albedo = 0;
+
+#if defined (VOXEL_INCLUDED)
 	float3 barys;
 	barys.xy = i.barycentricCoordinates;
 	barys.z = 1 - barys.x - barys.y;
@@ -207,31 +151,24 @@ float4 MyFragmentProgram(InterpolatorsVertex  i) : SV_Target
 		}
 	}
 
-	//if (barys.x > c)
-	//	ind = i.matInd.x;
-	//else if (barys.y > c)
-	//	ind = i.matInd.y;
-	//else
-	//	ind = i.matInd.z;
-
-	float3 albedo = 0;// _MainTex.Sample(sampler_MainTex, i.localPos.zy);
-
 	if (dotX > dotY && dotX > dotZ)
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.zy, ind)); //xDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.zy, ind));
 	else if (dotY > dotX && dotY > dotZ)
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xz, ind)); //yDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xz, ind));
 	else
-		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xy, ind)); //zDiff;
+		albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.localPos.xy, ind));
 
-	float minBary = min(barys.x, min(barys.y, barys.z));
-	minBary = smoothstep(0, 0.02, minBary);
+#else
+	albedo = tex2D(_MainTex, i.uv).rgb * _Tint;
+	//albedo = UNITY_SAMPLE_TEX2DARRAY(_MainTex, i.uv) * _Tint;
+#endif
+	//float minBary = min(barys.x, min(barys.y, barys.z));
+	//minBary = smoothstep(0, 0.02, minBary);
 	//albedo = albedo * minBary;
 
 	//float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
 	float3 specularTint;
 	float oneMinusReflectivity;
-
-	//albedo = UNITY_SAMPLE_TEX2DARRAY(_TexArr, float3(i.worldPos.xz, ind)) * _Tint;
 
 	albedo = DiffuseAndSpecularFromMetallic(
 		albedo, _Metallic, specularTint, oneMinusReflectivity

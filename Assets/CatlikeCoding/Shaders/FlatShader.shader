@@ -1,8 +1,8 @@
-﻿Shader "Custom/VoxelTerrain"
+﻿Shader "Custom/Flat"
 {
     Properties
     {
-		_TexArr("Tex", 2DArray) = "white" {}
+		_MainTex("Tex", 2D) = "white" {}
 		_Tint("Tint", Color) = (1,1,1,1)
 		[Gamma] _Metallic("Metallic", Range(0, 1)) = 0
 		_Smoothness("Smoothness", Range(0, 1)) = 0.5
@@ -28,7 +28,7 @@
 
 			#define FORWARD_BASE_PASS
 
-			#include "VoxelTerrain.cginc"
+			#include "Flat.cginc"
 		ENDCG
 		}
 
@@ -51,7 +51,7 @@
 			#pragma fragment MyFragmentProgram
 			#pragma geometry MyGeometryProgram
 
-			#include "VoxelTerrain.cginc"
+			#include "Flat.cginc"
 		ENDCG
 		}
 
