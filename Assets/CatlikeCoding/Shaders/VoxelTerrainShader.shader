@@ -17,13 +17,14 @@
 
 			CGPROGRAM
 			#pragma require 2darray
-			#pragma target 3.5
+			#pragma target 4.0
 
 			#pragma multi_compile _ SHADOWS_SCREEN
 			#pragma multi_compile _ VERTEXLIGHT_ON
 
 			#pragma vertex MyVertexProgram
 			#pragma fragment MyFragmentProgram
+			#pragma geometry MyGeometryProgram
 
 			#define FORWARD_BASE_PASS
 
@@ -42,12 +43,13 @@
 			CGPROGRAM
 
 			#pragma require 2darray
-			#pragma target 3.5
+			#pragma target 4.0
 
 			#pragma multi_compile_fwdadd_fullshadows
 
 			#pragma vertex MyVertexProgram
 			#pragma fragment MyFragmentProgram
+			#pragma geometry MyGeometryProgram
 
 			#include "MyLighting.cginc"
 		ENDCG
@@ -60,12 +62,13 @@
 
 			CGPROGRAM
 			#pragma require 2darray
-			#pragma target 3.5
+			#pragma target 4.0
 
 			#pragma multi_compile_shadowcaster
 
 			#pragma vertex MyShadowVertexProgram
 			#pragma fragment MyShadowFragmentProgram
+			//#pragma geometry MyGeometryProgram
 
 			#include "MyShadows.cginc"
 
