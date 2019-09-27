@@ -15,6 +15,29 @@ public class TextureArrayWizard : ScriptableWizard
         );
     }
 
+    public static Texture2DArray CreateTexture2DArray(Texture2D[] textures)
+    {
+        var t = textures[0];
+        var textureArray = new Texture2DArray(
+            t.width, t.height, textures.Length, t.format, t.mipmapCount > 1
+        )
+        {
+            anisoLevel = t.anisoLevel,
+            filterMode = t.filterMode,
+            wrapMode = t.wrapMode
+        };
+
+        for (int i = 0; i < textures.Length; i++)
+        {
+            for (int m = 0; m < t.mipmapCount; m++)
+            {
+                Graphics.CopyTexture(textures[i], 0, m, textureArray, i, m);
+            }
+        }
+
+        return textureArray;
+    }
+
     void OnWizardCreate()
     {
         string path = EditorUtility.SaveFilePanelInProject(
@@ -26,22 +49,7 @@ public class TextureArrayWizard : ScriptableWizard
             return;
         }
 
-        var t = textures[0];
-        var textureArray = new Texture2DArray(
-            t.width, t.height, textures.Length, t.format, t.mipmapCount > 1
-        );
-
-        textureArray.anisoLevel = t.anisoLevel;
-        textureArray.filterMode = t.filterMode;
-        textureArray.wrapMode = t.wrapMode;
-
-        for (int i = 0; i < textures.Length; i++)
-        {
-            for (int m = 0; m < t.mipmapCount; m++)
-            {
-                Graphics.CopyTexture(textures[i], 0, m, textureArray, i, m);
-            }
-        }
+        var textureArray = CreateTexture2DArray(textures);
 
         AssetDatabase.CreateAsset(textureArray, path);
     }

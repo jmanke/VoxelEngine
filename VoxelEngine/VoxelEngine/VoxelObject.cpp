@@ -90,7 +90,7 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 	for (int z = min; z < max; z++) {
 		for (int y = min; y < max; y++) {
 			for (int x = min; x < max; x++) {
-				Coord localCoord = Coord{ x, y, z };
+				Coord localCoord = Coord{ x * grid.spacing, y * grid.spacing, z * grid.spacing };
 				auto cell = MakeCell(localCoord, grid);
 
 				// TODO: Do in the loop
@@ -152,15 +152,15 @@ void VoxelObject::GenerateRegularCells(VoxelGrid& grid, Mesh& mesh) {
 
 					unsigned char matInd = (d0 > 0) ? grid.MaterialIndexAt(p0) : grid.MaterialIndexAt(p1);
 
-					if (v0Mat == 1) {
-						std::string log = "matInd: " + std::to_string(v0Mat);
-						fprintf(pFile, "%s\n", log);
-					}
+					//if (v0Mat == 1) {
+					//	std::string log = "matInd: " + std::to_string(v0Mat);
+					//	fprintf(pFile, "%s\n", log);
+					//}
 
-					if (v1Mat == 1) {
-						std::string log = "matInd: " + std::to_string(v1Mat);
-						fprintf(pFile, "%s\n", log);
-					}
+					//if (v1Mat == 1) {
+					//	std::string log = "matInd: " + std::to_string(v1Mat);
+					//	fprintf(pFile, "%s\n", log);
+					//}
 
 					if ((direction & reuseMask) != direction) {
 						long u = 0x0100 - t;

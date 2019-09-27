@@ -36,7 +36,7 @@ struct Cell {
 	}
 
 	static Coord getCornerCoord(const float spacing, const Coord& localCoord, const char cornerInd) {
-		return (localCoord + cornerPositions[cornerInd]) * spacing;
+		return (localCoord + cornerPositions[cornerInd] * spacing);
 	}
 };
 

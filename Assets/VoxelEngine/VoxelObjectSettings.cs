@@ -7,7 +7,7 @@ namespace Toast.Voxels
     [CreateAssetMenu(menuName = "Noise/Voxel Object Settings")]
     public class VoxelObjectSettings : ScriptableObject
     {
-        public Vector3Int dimensions = new Vector3Int(1,1,1);
+        public int depth = 3;
         public int blockSize = 16;
         public Vector2 copperRange = new Vector2(0.4f, 0.7f);
         public Vector2 ironRange = new Vector2(-0.6f, -0.3f);

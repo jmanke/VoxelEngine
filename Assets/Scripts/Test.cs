@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 public class Test : MonoBehaviour
 {
@@ -58,5 +59,8 @@ public class Test : MonoBehaviour
         var mr = go.AddComponent<MeshRenderer>();
         mf.sharedMesh = mesh;
         mr.material = mat;
+
+        AssetDatabase.CreateAsset(mesh, "Assets/voxel.mesh");
+        AssetDatabase.SaveAssets();
     }
 }

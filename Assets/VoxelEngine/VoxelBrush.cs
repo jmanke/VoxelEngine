@@ -12,7 +12,7 @@ public class VoxelBrush : MonoBehaviour
     }
 
     public QueryMode mode = QueryMode.Removal;
-    public MineralType mineralType = MineralType.COPPER;
+    public TerrainType mineralType = TerrainType.COPPER;
 
     public sbyte strength = 1;
     public float radius = 5f;
@@ -22,6 +22,7 @@ public class VoxelBrush : MonoBehaviour
 
     private float timer;
     private Collider cubeCol;
+    private LayerMask terrainMask;
 
     private void Start()
     {
@@ -29,6 +30,7 @@ public class VoxelBrush : MonoBehaviour
         cubeCol.transform.SetParent(transform);
         cubeCol.GetComponent<MeshRenderer>().enabled = false;
         cubeCol.enabled = false;
+        terrainMask = LayerMask.GetMask("Terrain");
     }
 
     private Vector3Int GetRemovalPoint(Vector3Int point, RaycastHit hit, VoxelObjectUnity voxelObject)
@@ -51,7 +53,7 @@ public class VoxelBrush : MonoBehaviour
                     {
                         if (voxelObject.voxelObject.VoxelFilled(new Vector3Int(x, point.y, z)))
                         {
-                            var voxelPoint = voxelObject.voxelObject.blockRoot.InverseTransformDirection(new Vector3(x, point.y, z));
+                            var voxelPoint = voxelObject.voxelObject.blockRoots[0].InverseTransformDirection(new Vector3(x, point.y, z));
                             var dist = Vector3.Distance(hit.point, voxelPoint);
 
                             if (dist < closestDist)
@@ -78,7 +80,7 @@ public class VoxelBrush : MonoBehaviour
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
             // hits the cube now
-            if (Physics.Raycast(ray, out var hit, Camera.main.farClipPlane))
+            if (Physics.Raycast(ray, out var hit, Camera.main.farClipPlane, terrainMask))
             {
                 var norm = hit.normal;
 
@@ -106,7 +108,7 @@ public class VoxelBrush : MonoBehaviour
 
         var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out var hit, Camera.main.farClipPlane))
+        if (Physics.Raycast(ray, out var hit, Camera.main.farClipPlane, terrainMask))
         {
             var hitPoint = hit.point;
             sphere.position = hitPoint;

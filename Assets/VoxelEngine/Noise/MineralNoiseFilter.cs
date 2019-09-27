@@ -4,15 +4,6 @@ using UnityEngine;
 
 namespace Toast.Voxels
 {
-    public enum MineralType : byte
-    {
-        STONE = 0,
-        COPPER = 1,
-        IRON = 2,
-
-        EMPTY = 255
-    }
-
     public class MineralNoiseFilter : INoiseFilter
     {
         NoiseSettings settings;

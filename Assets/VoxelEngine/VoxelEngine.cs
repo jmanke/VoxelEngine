@@ -8,28 +8,31 @@ namespace Toast.Voxels
     public class VoxelEngine : MonoBehaviour
     {
         public Material mat;
-        public bool blockyVoxels = true;
         public VoxelObjectSettings voxelObjectSettings;
+        public int currLod = 0;
+        // must be in same order as the texture2D array for the shader!
+        // TODO: create this from the material itself
+        public TerrainSettings terrainSettings;
+        public VoxelItem voxelItem;
+        public float rotationSpeed = 2f;
 
-        public float rotateionSpeed = 2f;
+        private List<VoxelObject> voxelObjects = new List<VoxelObject>();
 
         /// <summary>
         /// Queue to update blocks
         /// </summary>
-        private HashSet<Block> updateBlocks = new HashSet<Block>();
+        private Queue<Block> blocksToUpdate = new Queue<Block>();
 
         /// <summary>
         /// queue for rendering meshes on a block
         /// </summary>
         //private ConcurrentQueue<System.Tuple<Block, VoxelMesh>> renderMesh = new ConcurrentQueue<System.Tuple<Block, VoxelMesh>>();
-
         private List<RenderGroup> renderGroups = new List<RenderGroup>();
 
         /// <summary>
         /// Queue for generating colliders on a block
         /// </summary>
         private Queue<Block> generateCollider = new Queue<Block>();
-        private VoxelObject voxelObject;
 
         private class RenderGroup
         {
@@ -39,23 +42,43 @@ namespace Toast.Voxels
 
         public void Start()
         {
-            Regenerate();
+            var textureArray = TextureArrayWizard.CreateTexture2DArray(terrainSettings.textures.ToArray());
+            mat.SetTexture("_TexArr", textureArray);
+
+            for (int i = 0; i < 1; i++)
+            {
+                GenerateVoxelObject(voxelObjectSettings, new Vector3(i * 150, 0f, 0f));
+            }
         }
 
         public void Regenerate()
         {
-            voxelObject?.Destroy();
-            voxelObject = new VoxelObject(voxelObjectSettings, this);
-            voxelObject.root.position = new Vector3(-100, 0, 0);
+            foreach (var voxelObject in voxelObjects)
+            {
+                voxelObject.SetLod(currLod);
+            }
+        }
+
+        public void Delete()
+        {
+            foreach (var vo in voxelObjects)
+            {
+                vo.Destroy();
+            }
+
+            voxelObjects.Clear();
+        }
+
+        public void GenerateVoxelObject(VoxelObjectSettings voxelObjectSettings, Vector3 position)
+        {
+            var voxelObject = new VoxelObject(voxelObjectSettings, this);
+            voxelObject.root.position = position;
+            voxelObjects.Add(voxelObject);
 
             System.Threading.ThreadPool.QueueUserWorkItem(o =>
             {
                 voxelObject.GenerateIsovalues();
-
-                foreach (var block in voxelObject.blocks)
-                {
-                    updateBlocks.Add(block);
-                }
+                MainThread.ExecuteOnMainThread(() => voxelObject.SetLod(currLod));
             });
         }
 
@@ -65,46 +88,55 @@ namespace Toast.Voxels
         /// <param name="block"></param>
         public void UpdateBlock(Block block)
         {
-            updateBlocks.Add(block);
+            lock (blocksToUpdate)
+            {
+                block.isProcessing = true;
+                blocksToUpdate.Enqueue(block);
+            }
         }
 
         private void QueueRenderMeshes()
         {
-            var renderGroup = new RenderGroup();
-            renderGroup.numBlocks = updateBlocks.Count;
-            renderGroups.Add(renderGroup);
-
-            if (updateBlocks.Count > 1)
+            lock (blocksToUpdate)
             {
-                var blocksToUpdate = new Block[updateBlocks.Count];
-                int i = 0;
+                var renderGroup = new RenderGroup();
+                renderGroup.numBlocks = blocksToUpdate.Count;
+                renderGroups.Add(renderGroup);
 
-                foreach (var block in updateBlocks)
+                if (blocksToUpdate.Count > 1)
                 {
-                    blocksToUpdate[i] = block;
-                    i++;
+                    var blocksToUpdate = new Block[this.blocksToUpdate.Count];
+                    int i = 0;
+
+                    foreach (var block in this.blocksToUpdate)
+                    {
+                        blocksToUpdate[i] = block;
+                        i++;
+                    }
+
+                    this.blocksToUpdate.Clear();
+
+                    System.Threading.ThreadPool.QueueUserWorkItem(o =>
+                    {
+                        foreach (var block in blocksToUpdate)
+                        {
+                            block.isDirty = false;
+                            var voxelMesh = block.voxelObject.ComputeMesh(block);
+                            renderGroup.completedBlocks.Add(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
+                        }
+                    });
                 }
-
-                updateBlocks.Clear();
-
-                System.Threading.ThreadPool.QueueUserWorkItem(o =>
+                else
                 {
                     foreach (var block in blocksToUpdate)
                     {
+                        block.isDirty = false;
                         var voxelMesh = block.voxelObject.ComputeMesh(block);
                         renderGroup.completedBlocks.Add(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
                     }
-                });
-            }
-            else
-            {
-                foreach (var block in updateBlocks)
-                {
-                    var voxelMesh = block.voxelObject.ComputeMesh(block);
-                    renderGroup.completedBlocks.Add(new System.Tuple<Block, VoxelMesh>(block, voxelMesh));
-                }
 
-                updateBlocks.Clear();
+                    blocksToUpdate.Clear();
+                }
             }
         }
 
@@ -122,17 +154,19 @@ namespace Toast.Voxels
                         var voxelMesh = res.Item2;
                         var voxelObject = block.voxelObject;
 
-                        if (block.go == null)
+                        if (!block.isGenerated)
                         {
                             block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
-                            block.go.transform.SetParent(voxelObject.blockRoot);
-                            block.go.transform.localPosition = new Vector3(block.x, block.y, block.z) * block.size;
+                            block.go.layer = LayerMask.NameToLayer("Terrain");
+                            block.go.transform.SetParent(voxelObject.blockRoots[block.lod]);
+                            block.go.transform.localPosition = new Vector3(block.x, block.y, block.z) * block.size * block.spacing;
                             block.go.transform.localRotation = Quaternion.identity;
 
                             block.renderer = block.go.AddComponent<MeshRenderer>();
                             block.renderer.material = mat;
 
                             block.meshFilter = block.go.AddComponent<MeshFilter>();
+                            block.isGenerated = true;
                         }
 
                         var mesh = new Mesh();
@@ -143,6 +177,7 @@ namespace Toast.Voxels
                         block.meshFilter.sharedMesh = mesh;
                         block.renderer.enabled = false;
                         block.renderer.enabled = true;
+                        block.isProcessing = false;
 
                         generateCollider.Enqueue(block);
                     }
@@ -174,14 +209,16 @@ namespace Toast.Voxels
         // Update is called once per frame
         void Update()
         {
+            foreach (var voxelObject in voxelObjects)
+            {
+                voxelObject.Update();
+            }
+
             QueueRenderMeshes();
 
             RenderMeshes();
 
             GenerateColliders();
-
-            voxelObject?.root.Rotate(Vector3.up, rotateionSpeed * Time.deltaTime);
-            voxelObject?.root.RotateAround(Vector3.zero, Vector3.up, rotateionSpeed * 0.2f * Time.deltaTime);
         }
     }
 }

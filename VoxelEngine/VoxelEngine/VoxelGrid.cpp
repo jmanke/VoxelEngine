@@ -32,7 +32,7 @@ char VoxelGrid::IsovalueAt(int x, int y, int z) const {
 }
 
 char VoxelGrid::IsovalueAt(Coord coord) const {
-	return IsovalueAt((int)coord.x, (int)coord.y, (int)coord.z);
+	return IsovalueAt((int)coord.x / spacing, (int)coord.y / spacing, (int)coord.z / spacing);
 }
 
 unsigned char VoxelGrid::MaterialIndexAt(int x, int y, int z) const {
@@ -53,6 +53,6 @@ unsigned char VoxelGrid::MaterialIndexAt(int x, int y, int z) const {
 }
 
 unsigned char VoxelGrid::MaterialIndexAt(Coord coord) const {
-	return MaterialIndexAt((int)coord.x, (int)coord.y, (int)coord.z);
+	return MaterialIndexAt((int)coord.x / spacing, (int)coord.y / spacing, (int)coord.z / spacing);
 }
 

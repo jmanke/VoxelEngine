@@ -26,7 +26,7 @@ namespace Toast.Voxels
             voxelObject.DeleteVoxel(origin);
         }
 
-        public void FillVoxel(Vector3Int origin, MineralType mineralType)
+        public void FillVoxel(Vector3Int origin, TerrainType mineralType)
         {
             voxelObject.FillVoxel(origin, mineralType);
         }

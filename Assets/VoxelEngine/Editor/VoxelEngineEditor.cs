@@ -17,6 +17,11 @@ namespace Toast.Voxels
             {
                 voxelEngine.Regenerate();
             }
+
+            if (GUILayout.Button("Delete"))
+            {
+                voxelEngine.Delete();
+            }
         }
     }
 }

@@ -4,17 +4,13 @@ namespace Toast.Voxels
 {
     public class VoxelObject
     {
-        public readonly Transform blockRoot;
         public readonly Transform root;
-        public readonly Block[] blocks;
-        public readonly int dimX;
-        public readonly int dimY;
-        public readonly int dimZ;
+        public readonly Transform[] blockRoots;
+        public readonly Block[][] blocks;
+        public readonly int depth;
         public readonly int blockSize;
 
-        private readonly int isoDimX;
-        private readonly int isoDimY;
-        private readonly int isoDimZ;
+        private readonly int isoDim;
         private readonly sbyte[] isovalues;
         private readonly byte[] materialValues;
         private VoxelEngineWrapper voxelObjWrapper;
@@ -22,23 +18,38 @@ namespace Toast.Voxels
         private VoxelObjectSettings settings;
         private INoiseFilter[] noiseFilters;
         private MineralNoiseFilter mineralNoiseFilter;
+        private int currLod = 0;
+        private int currBlockDim;
 
         public VoxelObject(VoxelObjectSettings settings, VoxelEngine voxelEngine)
         {
             this.voxelObjWrapper = new VoxelEngineWrapper();
             this.settings = settings;
 
-            dimX = settings.dimensions.x;
-            dimY = settings.dimensions.y;
-            dimZ = settings.dimensions.z;
+            depth = settings.depth;
             blockSize = settings.blockSize;
+            isoDim = (int)Mathf.Pow(2, depth) * blockSize;
+            isovalues = new sbyte[isoDim * isoDim * isoDim];
+            materialValues = new byte[isoDim * isoDim * isoDim];
+            blocks = new Block[depth][];
+            blockRoots = new Transform[depth];
 
-            isoDimX = dimX * blockSize;
-            isoDimY = dimY * blockSize;
-            isoDimZ = dimZ * blockSize;
-            isovalues = new sbyte[isoDimX * isoDimY * isoDimZ];
-            materialValues = new byte[isoDimX * isoDimY * isoDimZ];
-            blocks = new Block[dimX * dimY * dimZ];
+            for (int i = 0; i < depth; i++)
+            {
+                int dim = (int)Mathf.Pow(2, depth - i);
+                blocks[i] = new Block[dim * dim * dim];
+
+                for (int x = 0; x < dim; x++)
+                {
+                    for (int y = 0; y < dim; y++)
+                    {
+                        for (int z = 0; z < dim; z++)
+                        {
+                            blocks[i][x + y * dim + z * dim * dim] = new Block(x, y, z, i, blockSize, this);
+                        }
+                    }
+                }
+            }
 
             this.voxelEngine = voxelEngine;
 
@@ -50,32 +61,41 @@ namespace Toast.Voxels
                 noiseFilters[i] = NoiseFilterFactory.CreateNoiseFilter(settings.noiseLayers[i].noiseSettings);
             }
 
-            blockRoot = new GameObject("Voxel Object").transform;
-            blockRoot.position = Vector3.zero;
-            blockRoot.rotation = Quaternion.identity;
-            blockRoot.gameObject.AddComponent<VoxelObjectUnity>().voxelObject = this;
-
             root = new GameObject("Voxel Centre").transform;
-            root.position = blockRoot.TransformPoint(new Vector3(isoDimX, isoDimY, isoDimZ) / 2f);
+            root.position = Vector3.zero;
+            root.position = root.TransformPoint(new Vector3(isoDim, isoDim, isoDim) / 2f);
             root.rotation = Quaternion.identity;
 
-            blockRoot.SetParent(root);
-
-            for (int x = 0; x < dimX; x++)
+            for (int i = 0; i < depth; i++)
             {
-                for (int y = 0; y < dimY; y++)
-                {
-                    for (int z = 0; z < dimZ; z++)
-                    {
-                        blocks[x + y * dimX + z * dimY * dimY] = new Block(x, y, z, 0, blockSize, this);
-                    }
-                }
+                var blockRoot = new GameObject($"lod_{i}").transform;
+                blockRoot.position = Vector3.zero;
+                blockRoot.rotation = Quaternion.identity;
+                blockRoot.gameObject.AddComponent<VoxelObjectUnity>().voxelObject = this;
+                blockRoot.SetParent(root);
+                blockRoots[i] = blockRoot;
+                blockRoot.gameObject.SetActive(false);
+            }
+        }
+
+        public void SetLod(int lod)
+        {
+            blockRoots[currLod].gameObject.SetActive(false);
+            currLod = lod;
+            currBlockDim = (int)Mathf.Pow(2, depth - lod);
+            blockRoots[lod].gameObject.SetActive(true);
+
+            for (int i = 0; i < blocks[currLod].Length; i++)
+            {
+                if (!blocks[currLod][i].isGenerated)
+                    blocks[currLod][i].isDirty = true;
             }
         }
 
         public void Destroy()
         {
             Object.Destroy(root.gameObject);
+            voxelObjWrapper.Delete();
         }
 
         public Vector3 Centre
@@ -86,16 +106,6 @@ namespace Toast.Voxels
             }
         }
 
-        /// <summary>
-        /// Converts a float to Sbyte
-        /// </summary>
-        /// <param name="val">Must be between -1.0f and 1.0f</param>
-        /// <returns></returns>
-        public static sbyte FloatToSbyte(float val)
-        {
-            return (sbyte)(val * 128f);
-        }
-
         static bool IsBitSet(byte b, int pos)
         {
             return (b & (1 << pos)) != 0;
@@ -103,13 +113,13 @@ namespace Toast.Voxels
 
         bool BlockAt(int x, int y, int z, out Block block)
         {
-            if (x < 0 || x > dimX - 1 || y < 0 || y > dimY - 1 || z < 0 || z > dimZ - 1)
+            if (x < 0 || x > currBlockDim - 1 || y < 0 || y > currBlockDim - 1 || z < 0 || z > currBlockDim - 1)
             {
                 block = null;
                 return false;
             }
 
-            block = blocks[x + y * dimX + z * dimY * dimY];
+            block = blocks[currLod][x + y * currBlockDim + z * currBlockDim * currBlockDim];
 
             return true;
         }
@@ -123,7 +133,7 @@ namespace Toast.Voxels
         /// <param name="value">Must be between -1.0 and 1.0</param>
         public void UpdateIsovalue(int x, int y, int z, sbyte value)
         {
-            if (x < 0 || x > isoDimX - 1 || y < 0 || y > isoDimY - 1 || z < 0 || z > isoDimZ - 1)
+            if (x < 0 || x > isoDim - 1 || y < 0 || y > isoDim - 1 || z < 0 || z > isoDim - 1)
                 return;
 
             //local block coords
@@ -165,23 +175,25 @@ namespace Toast.Voxels
 
                         if ((neighbourMask & neighbourFlags) == neighbourMask && BlockAt(i, j, k, out var neighbour))
                         {
-                            voxelEngine.UpdateBlock(neighbour);
+                            neighbour.isDirty = true;
+                            //voxelEngine.UpdateBlock(neighbour);
                         }
                     }
                 }
             }
 
-            isovalues[x + y * isoDimX + z * isoDimY * isoDimY] = value;
+            isovalues[x + y * isoDim + z * isoDim * isoDim] = value;
 
             if (BlockAt(blockIndX, blockIndY, blockIndZ, out var block))
             {
-                voxelEngine.UpdateBlock(block);
+                block.isDirty = true;
+                //voxelEngine.UpdateBlock(block);
             }
         }
 
         public sbyte IsovalueAt(int x, int y, int z)
         {
-            return isovalues[x + y * isoDimX + z * isoDimY * isoDimY];
+            return isovalues[x + y * isoDim + z * isoDim * isoDim];
         }
 
         /// <summary>
@@ -194,7 +206,7 @@ namespace Toast.Voxels
         /// <returns></returns>
         public bool SafeIsovalueAt(int x, int y, int z, out sbyte isovalue)
         {
-            if (x < 0 || x > isoDimX - 1 || y < 0 || y > isoDimY - 1 || z < 0 || z > isoDimZ - 1)
+            if (x < 0 || x > isoDim - 1 || y < 0 || y > isoDim - 1 || z < 0 || z > isoDim - 1)
             {
                 isovalue = -1;
                 return false;
@@ -217,13 +229,13 @@ namespace Toast.Voxels
 
         public bool VoxelFilled(Vector3Int worldPos)
         {
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            var origin = blockRoots[currLod].worldToLocalMatrix.MultiplyPoint(worldPos);
             return VoxelFilled((int)origin.x, (int)origin.y, (int)origin.z);
         }
 
         private int CoordToIsoInd(int x, int y, int z)
         {
-            return x + y * isoDimX + z * isoDimY * isoDimY;
+            return x + y * isoDim + z * isoDim * isoDim;
         }
 
         private Vector3Int GetClosestFilledVoxel(int x, int y, int z)
@@ -254,44 +266,39 @@ namespace Toast.Voxels
             return closestVoxelInd;
         }
 
-        public void FillVoxel(Vector3 worldPos, MineralType mineralType)
+        public void FillVoxel(Vector3 worldPos, TerrainType terrainType)
         {
             // TODO: refactor this, very messy. Only for testing purposes currently
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            var origin = blockRoots[currLod].worldToLocalMatrix.MultiplyPoint(worldPos);
             int x = (int)origin.x;
             int y = (int)origin.y;
             int z = (int)origin.z;
             //var intOrigin = new Vector3Int(x, y, z);
 
             UpdateIsovalue(x, y, z, 1);
-            byte matInd = (byte)mineralType;
+            byte matInd = (byte)terrainType;
             materialValues[CoordToIsoInd(x, y, z)] = matInd;
         }
 
         public void DeleteVoxel(Vector3 worldPos)
         {
-            var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
+            var origin = blockRoots[currLod].worldToLocalMatrix.MultiplyPoint(worldPos);
             int xPos = (int)origin.x;
             int yPos = (int)origin.y;
             int zPos = (int)origin.z;
+            int ind = CoordToIsoInd(xPos, yPos, zPos);
+
+            if (VoxelFilled(xPos, yPos, zPos))
+            {
+                var voxelDrop = GameObject.Instantiate(voxelEngine.voxelItem.gameObject);
+                voxelDrop.transform.position = worldPos;
+                voxelDrop.GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 4);
+                voxelDrop.GetComponent<MeshRenderer>().material.SetTexture("_MainTex", voxelEngine.terrainSettings.textures[materialValues[ind]]);
+            }
 
             UpdateIsovalue(xPos, yPos, zPos, -1);
-            materialValues[CoordToIsoInd(xPos, yPos, zPos)] = (byte)MineralType.EMPTY;
+            materialValues[ind] = (byte)TerrainType.EMPTY;
         }
-
-        //public void ModifyVoxel(Vector3 worldPos, sbyte delta)
-        //{
-        //    var origin = blockRoot.worldToLocalMatrix.MultiplyPoint(worldPos);
-        //    int x = (int)origin.x;
-        //    int y = (int)origin.y;
-        //    int z = (int)origin.z;
-
-        //    if (SafeIsovalueAt(x, y, z, out sbyte isovalue))
-        //    {
-        //        sbyte val = (sbyte)Mathf.Clamp(isovalue + delta, -128, 127);
-        //        UpdateIsovalue(x, y, z, val);
-        //    }
-        //}
 
         public float CalculateIsovalue(float x, float y, float z)
         {
@@ -343,15 +350,15 @@ namespace Toast.Voxels
 
             if (noiseVal >= settings.copperRange.x && noiseVal < settings.copperRange.y)
             {
-                blockType = (byte)MineralType.COPPER;
+                blockType = (byte)TerrainType.COPPER;
             }
             else if (noiseVal >= settings.ironRange.x && noiseVal < settings.ironRange.y)
             {
-                blockType = (byte)MineralType.IRON;
+                blockType = (byte)TerrainType.IRON;
             }
             else
             {
-                blockType = (byte)MineralType.STONE;
+                blockType = (byte)TerrainType.STONE;
             }
 
             return blockType;
@@ -367,22 +374,22 @@ namespace Toast.Voxels
             int iron = 0;
             int empty = 0;
 
-            for (int x = 0; x < isoDimX; x++)
+            for (int x = 0; x < isoDim; x++)
             {
-                for (int y = 0; y < isoDimY; y++)
+                for (int y = 0; y < isoDim; y++)
                 {
-                    for (int z = 0; z < isoDimZ; z++)
+                    for (int z = 0; z < isoDim; z++)
                     {
-                        int ind = x + y * isoDimX + z * isoDimY * isoDimY;
+                        int ind = x + y * isoDim + z * isoDim * isoDim;
                         float isoval = CalculateIsovalue(x, y, z);//noiseFilter.Evaluate(x, y, z);
-                        sbyte isobyte = (voxelEngine.blockyVoxels) ? ((isoval < 0) ? (sbyte)-1 : (sbyte)1) : FloatToSbyte(Mathf.Clamp(isoval, -0.9999999f, 0.9999999f));
+                        sbyte isobyte = (isoval < 0) ? (sbyte)-1 : (sbyte)1;
                         isovalues[ind] = isobyte; 
 
-                        materialValues[ind] = (isobyte == -1) ? (byte)MineralType.EMPTY : CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
-                        if (materialValues[ind] == (byte)MineralType.EMPTY) empty++;
-                        if (materialValues[ind] == (byte)MineralType.STONE) stone++;
-                        if (materialValues[ind] == (byte)MineralType.COPPER) copper++;
-                        if (materialValues[ind] == (byte)MineralType.IRON) iron++;
+                        materialValues[ind] = (isobyte == -1) ? (byte)TerrainType.EMPTY : CalculateBlockType(x, y, z); //(mineralNoiseFilter.Evaluate(x, y, z) < 0.7f) ? (byte)0 : (byte)1;
+                        if (materialValues[ind] == (byte)TerrainType.EMPTY) empty++;
+                        if (materialValues[ind] == (byte)TerrainType.STONE) stone++;
+                        if (materialValues[ind] == (byte)TerrainType.COPPER) copper++;
+                        if (materialValues[ind] == (byte)TerrainType.IRON) iron++;
                     }
                 }
             }
@@ -393,28 +400,29 @@ namespace Toast.Voxels
         public void FillIsoValues(Block block, sbyte[] filledIsoValues, byte[] filledMaterialIndices)
         {
             int isoSize = block.size + 1;
+            int spacing = (int)Mathf.Pow(2, block.lod);
 
-            for (int x = 0, isoX = block.x * blockSize; x < isoSize; x++, isoX++)
+            for (int x = 0, isoX = block.x * blockSize * spacing; x < isoSize; x++, isoX+= spacing)
             {
-                for (int y = 0, isoY = block.y * blockSize; y < isoSize; y++, isoY++)
+                for (int y = 0, isoY = block.y * blockSize * spacing; y < isoSize; y++, isoY+= spacing)
                 {
-                    for (int z = 0, isoZ = block.z * blockSize; z < isoSize; z++, isoZ++)
+                    for (int z = 0, isoZ = block.z * blockSize * spacing; z < isoSize; z++, isoZ+= spacing)
                     {
                         if (isoX < 0)
                             isoX = 0;
-                        else if (isoX > isoDimX - 1)
-                            isoX = isoDimX - 1;
+                        else if (isoX > isoDim - 1)
+                            isoX = isoDim - 1;
                         if (isoY < 0)
                             isoY = 0;
-                        else if (isoY > isoDimY - 1)
-                            isoY = isoDimY - 1;
+                        else if (isoY > isoDim - 1)
+                            isoY = isoDim - 1;
                         if (isoZ < 0)
                             isoZ = 0;
-                        else if (isoZ > isoDimZ - 1)
-                            isoZ = isoDimZ - 1;
+                        else if (isoZ > isoDim - 1)
+                            isoZ = isoDim - 1;
 
                         int filledInd = x + y * isoSize + z * isoSize * isoSize;
-                        int ind = isoX + isoY * isoDimX + isoZ * isoDimY * isoDimY;
+                        int ind = isoX + isoY * isoDim + isoZ * isoDim * isoDim;
                         filledIsoValues[filledInd] = isovalues[ind];
                         filledMaterialIndices[filledInd] = materialValues[ind];
                     }
@@ -440,7 +448,7 @@ namespace Toast.Voxels
 
             voxelObjWrapper.ComputeMesh(isovalues,
                                         blockSize,
-                                        0,
+                                        block.lod,
                                         vertices,
                                         numVert,
                                         triangles,
@@ -458,6 +466,22 @@ namespace Toast.Voxels
             voxelMesh.vertexMaterialIndices = vertexMaterialIndices;
 
             return voxelMesh;
+        }
+
+        public void Update()
+        {
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                for (int j = 0; j < blocks[i].Length; j++)
+                {
+                    var block = blocks[i][j];
+
+                    if (block.isDirty && !block.isProcessing)
+                    {
+                        voxelEngine.UpdateBlock(block);
+                    }
+                }
+            }
         }
     }
 }
