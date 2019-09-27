@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fdc12efae8e3084fb4775b9cb0542b3, type: 3}
   m_Name: AsteroidA
   m_EditorClassIdentifier: 
-  dimensions: {x: 8, y: 8, z: 8}
+  depth: 4
   blockSize: 16
   copperRange: {x: 0.2, y: 1}
   ironRange: {x: -1, y: -0.4}

@@ -6,7 +6,8 @@ namespace Toast.Voxels
     {
         public readonly Transform root;
         public readonly Transform[] blockRoots;
-        public readonly Block[][] blocks;
+        //public readonly Block[][] blocks;
+        public Octree blockTree;
         public readonly int depth;
         public readonly int blockSize;
 
@@ -26,30 +27,31 @@ namespace Toast.Voxels
             this.voxelObjWrapper = new VoxelEngineWrapper();
             this.settings = settings;
 
-            depth = settings.depth;
+            depth = settings.depth-1;
             blockSize = settings.blockSize;
             isoDim = (int)Mathf.Pow(2, depth) * blockSize;
             isovalues = new sbyte[isoDim * isoDim * isoDim];
             materialValues = new byte[isoDim * isoDim * isoDim];
-            blocks = new Block[depth][];
+            //blocks = new Block[depth][];
+            blockTree = new Octree(depth+1, blockSize, this);
             blockRoots = new Transform[depth];
 
-            for (int i = 0; i < depth; i++)
-            {
-                int dim = (int)Mathf.Pow(2, depth - i);
-                blocks[i] = new Block[dim * dim * dim];
+            //for (int i = 0; i < depth; i++)
+            //{
+            //    int dim = (int)Mathf.Pow(2, depth - i);
+            //    blocks[i] = new Block[dim * dim * dim];
 
-                for (int x = 0; x < dim; x++)
-                {
-                    for (int y = 0; y < dim; y++)
-                    {
-                        for (int z = 0; z < dim; z++)
-                        {
-                            blocks[i][x + y * dim + z * dim * dim] = new Block(x, y, z, i, blockSize, this);
-                        }
-                    }
-                }
-            }
+            //    for (int x = 0; x < dim; x++)
+            //    {
+            //        for (int y = 0; y < dim; y++)
+            //        {
+            //            for (int z = 0; z < dim; z++)
+            //            {
+            //                blocks[i][x + y * dim + z * dim * dim] = new Block(x, y, z, i, blockSize, this);
+            //            }
+            //        }
+            //    }
+            //}
 
             this.voxelEngine = voxelEngine;
 
@@ -78,17 +80,32 @@ namespace Toast.Voxels
             }
         }
 
+        //private void InitializeBlocks(Block block, int depth)
+        //{
+
+        //}
+
         public void SetLod(int lod)
         {
+            if (lod > depth - 1)
+            {
+                Debug.Log("Lod out of range: " + lod);
+                return;
+            }
+
             blockRoots[currLod].gameObject.SetActive(false);
             currLod = lod;
             currBlockDim = (int)Mathf.Pow(2, depth - lod);
             blockRoots[lod].gameObject.SetActive(true);
 
-            for (int i = 0; i < blocks[currLod].Length; i++)
+            var blocksAtLod = blockTree.BlocksAtLod(currLod);
+
+            Debug.Log("Number of blocks = " + blocksAtLod.Count);
+
+            foreach (var block in blocksAtLod)
             {
-                if (!blocks[currLod][i].isGenerated)
-                    blocks[currLod][i].isDirty = true;
+                if (!block.isGenerated)
+                    block.isDirty = true;
             }
         }
 
@@ -111,18 +128,18 @@ namespace Toast.Voxels
             return (b & (1 << pos)) != 0;
         }
 
-        bool BlockAt(int x, int y, int z, out Block block)
-        {
-            if (x < 0 || x > currBlockDim - 1 || y < 0 || y > currBlockDim - 1 || z < 0 || z > currBlockDim - 1)
-            {
-                block = null;
-                return false;
-            }
+        //bool BlockAt(int x, int y, int z, out Block block)
+        //{
+        //    if (x < 0 || x > currBlockDim - 1 || y < 0 || y > currBlockDim - 1 || z < 0 || z > currBlockDim - 1)
+        //    {
+        //        block = null;
+        //        return false;
+        //    }
 
-            block = blocks[currLod][x + y * currBlockDim + z * currBlockDim * currBlockDim];
+        //    block = blocks[currLod][x + y * currBlockDim + z * currBlockDim * currBlockDim];
 
-            return true;
-        }
+        //    return true;
+        //}
 
         /// <summary>
         /// Updates an isovalue
@@ -136,59 +153,26 @@ namespace Toast.Voxels
             if (x < 0 || x > isoDim - 1 || y < 0 || y > isoDim - 1 || z < 0 || z > isoDim - 1)
                 return;
 
-            //local block coords
-            int blockX = x % blockSize;
-            int blockY = y % blockSize;
-            int blockZ = z % blockSize;
+            var isoPos = new Vector3(x, y, z);
 
-            byte neighbourFlags = 0;
-
-            if (blockX < 1) neighbourFlags += 1;
-            else if (blockX > blockSize - 1) neighbourFlags += 8;
-            if (blockY < 1) neighbourFlags += 2;
-            else if (blockY > blockSize - 1) neighbourFlags += 16;
-            if (blockZ < 1) neighbourFlags += 4;
-            else if (blockZ > blockSize - 1) neighbourFlags += 32;
-
-            int blockIndX = x / blockSize;
-            int blockIndY = y / blockSize;
-            int blockIndZ = z / blockSize;
-
-            //Block neighbour;
-            byte neighbourMask = 0;
-
-            for (int i = blockIndX - 1; i < blockIndX + 2; i++)
+            for (int i = -1; i < 2; i++)
             {
-                for (int j = blockIndY - 1; j < blockIndY + 2; j++)
+                for (int j = -1; j < 2; j++)
                 {
-                    for (int k = blockIndZ - 1; k < blockIndZ + 2; k++)
+                    for (int k = -1; k < 2; k++)
                     {
-                        neighbourMask = 0;
+                        if (i == 0 && j == 0 && k == 0)
+                            continue;
 
-                        if (i == blockIndX - 1) neighbourMask += 1;
-                        if (j == blockIndY - 1) neighbourMask += 2;
-                        if (k == blockIndZ - 1) neighbourMask += 4;
-
-                        if (i == blockIndX + 1) neighbourMask += 8;
-                        if (j == blockIndY + 1) neighbourMask += 16;
-                        if (k == blockIndZ + 1) neighbourMask += 32;
-
-                        if ((neighbourMask & neighbourFlags) == neighbourMask && BlockAt(i, j, k, out var neighbour))
-                        {
-                            neighbour.isDirty = true;
-                            //voxelEngine.UpdateBlock(neighbour);
-                        }
+                        var neighbour = blockTree.Search(isoPos + new Vector3(i,j,k), 0);
+                        neighbour.isDirty = true;
                     }
                 }
             }
 
             isovalues[x + y * isoDim + z * isoDim * isoDim] = value;
-
-            if (BlockAt(blockIndX, blockIndY, blockIndZ, out var block))
-            {
-                block.isDirty = true;
-                //voxelEngine.UpdateBlock(block);
-            }
+            var block = blockTree.Search(new Vector3(x, y, z), 0);
+            block.isDirty = true;
         }
 
         public sbyte IsovalueAt(int x, int y, int z)
@@ -402,11 +386,11 @@ namespace Toast.Voxels
             int isoSize = block.size + 1;
             int spacing = (int)Mathf.Pow(2, block.lod);
 
-            for (int x = 0, isoX = block.x * blockSize * spacing; x < isoSize; x++, isoX+= spacing)
+            for (int x = 0, isoX = block.x * blockSize; x < isoSize; x++, isoX+= spacing)
             {
-                for (int y = 0, isoY = block.y * blockSize * spacing; y < isoSize; y++, isoY+= spacing)
+                for (int y = 0, isoY = block.y * blockSize; y < isoSize; y++, isoY+= spacing)
                 {
-                    for (int z = 0, isoZ = block.z * blockSize * spacing; z < isoSize; z++, isoZ+= spacing)
+                    for (int z = 0, isoZ = block.z * blockSize; z < isoSize; z++, isoZ+= spacing)
                     {
                         if (isoX < 0)
                             isoX = 0;
@@ -470,18 +454,27 @@ namespace Toast.Voxels
 
         public void Update()
         {
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                for (int j = 0; j < blocks[i].Length; j++)
-                {
-                    var block = blocks[i][j];
+            var blocks = blockTree.BlocksAtLod(currLod);
 
-                    if (block.isDirty && !block.isProcessing)
-                    {
-                        voxelEngine.UpdateBlock(block);
-                    }
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                if (blocks[i].isDirty && !blocks[i].isProcessing)
+                {
+                    voxelEngine.UpdateBlock(blocks[i]);
                 }
             }
+            //for (int i = 0; i < blocks.Length; i++)
+            //{
+            //    for (int j = 0; j < blocks[i].Length; j++)
+            //    {
+            //        var block = blocks[i][j];
+
+            //        if (block.isDirty && !block.isProcessing)
+            //        {
+            //            voxelEngine.UpdateBlock(block);
+            //        }
+            //    }
+            //}
         }
     }
 }

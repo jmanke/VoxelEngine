@@ -145,7 +145,7 @@ namespace Toast.Voxels
             for (int i = renderGroups.Count - 1; i >= 0; i--)
             {
                 var renderGroup = renderGroups[i];
-                // none are incomplete, render the group
+                // all blocks are computed, render the group
                 if (renderGroup.completedBlocks.Count == renderGroup.numBlocks)
                 {
                     foreach (var res in renderGroup.completedBlocks)
@@ -154,17 +154,16 @@ namespace Toast.Voxels
                         var voxelMesh = res.Item2;
                         var voxelObject = block.voxelObject;
 
+                        // first time generation for this block, initialize it 
                         if (!block.isGenerated)
                         {
                             block.go = new GameObject($"{block.x}_{block.y}_{block.z}");
                             block.go.layer = LayerMask.NameToLayer("Terrain");
                             block.go.transform.SetParent(voxelObject.blockRoots[block.lod]);
-                            block.go.transform.localPosition = new Vector3(block.x, block.y, block.z) * block.size * block.spacing;
+                            block.go.transform.localPosition = new Vector3(block.x, block.y, block.z) * block.size;
                             block.go.transform.localRotation = Quaternion.identity;
-
                             block.renderer = block.go.AddComponent<MeshRenderer>();
                             block.renderer.material = mat;
-
                             block.meshFilter = block.go.AddComponent<MeshFilter>();
                             block.isGenerated = true;
                         }

@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
-namespace Toast
+namespace Toast.Voxels
 {
     public enum NodeIndex
     {
@@ -15,205 +13,99 @@ namespace Toast
 
     public enum Direction
     {
-        Right,
-        Left,
-        Top,
-        Bottom,
-        Front,
-        Back
+        Right = 0,
+        Left = 1,
+        Top = 2,
+        Bottom = 3,
+        Front = 4,
+        Back = 5
     }
 
-    public class Octree : MonoBehaviour
+    public class Octree
     {
-        private class Node
+        private static readonly Vector3[] VectorDirection = new Vector3[]
         {
-            public int depth;
-            public int x;
-            public int y;
-            public int z;
-            public Node[] children = new Node[8];
-            public int size;
+            Vector3.right,
+            -Vector3.right,
+            Vector3.up,
+            -Vector3.up,
+            Vector3.forward,
+            -Vector3.forward
+        };
 
-            public Node(int x, int y, int z, int depth, int size)
-            {
-                //chunk = new Chunk(size);
-                this.depth = depth;
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.size = size;
-            }
+        public readonly int depth = 4;
+        public readonly int size = 16;
 
-            public Node Search(Vector3 position)
-            {
-                float halfLength = AxisLength / 2f;
-                byte index = 0;
+        private Block root;
+        private List<Block>[] blockLod;
 
-                if (position.x >= x * size + halfLength) index |= 1;
-                if (position.y >= y * size + halfLength) index |= 2;
-                if (position.z >= z * size + halfLength) index |= 4;
-
-                return children[index];
-            }
-
-            public Vector3 Centre
-            {
-                get
-                {
-                    float halfLength = AxisLength / 2f;
-                    return new Vector3(x * size + halfLength, y * size + halfLength, z * size + halfLength);
-                }
-            }
-
-            public float AxisLength
-            {
-                get
-                {
-                    return Mathf.Pow(2, depth) * size;
-                }
-            }
-        }
-
-        public int depth = 4;
-        public int size = 16;
-        public int showDepth = 0;
-        public float renderAngle = 10f;
-
-        public Transform target;
-        public Color[] colors;
-
-        private Node root;
-
-        private void BuildTreeRecursive(Node node)
+        public Octree(int depth, int size, VoxelObject voxelObject)
         {
-            if (node.depth < 1)
-                return;
+            root = new Block(0, 0, 0, depth-1, size, voxelObject);
+            blockLod = new List<Block>[depth];
 
-            int halfSize = (int)Mathf.Pow(2, node.depth) / 2;
-            //Debug.Log("Halfsize = " + halfSize);
-
-            node.children[0] = new Node(node.x, node.y, node.z, node.depth - 1, size);
-            node.children[1] = new Node(node.x + halfSize, node.y, node.z, node.depth - 1, size);
-            node.children[4] = new Node(node.x, node.y, node.z + halfSize, node.depth - 1, size);
-            node.children[5] = new Node(node.x + halfSize, node.y, node.z + halfSize, node.depth - 1, size);
-
-            node.children[2] = new Node(node.x, node.y + halfSize, node.z, node.depth - 1, size);
-            node.children[3] = new Node(node.x + halfSize, node.y + halfSize, node.z, node.depth - 1, size);
-            node.children[6] = new Node(node.x, node.y + halfSize, node.z + halfSize, node.depth - 1, size);
-            node.children[7] = new Node(node.x + halfSize, node.y + halfSize, node.z + halfSize, node.depth - 1, size);
-
-            foreach (var child in node.children)
+            for (int i = 0; i < blockLod.Length; i++)
             {
-                BuildTreeRecursive(child);
+                blockLod[i] = new List<Block>();
             }
-        }
 
-        public void BuildTree()
-        {
-            root = new Node(0, 0, 0, depth, size);
+            blockLod[depth - 1].Add(root);
 
             BuildTreeRecursive(root);
         }
 
-        private void DrawNode(Node node, Color color)
+        public Block Search(Vector3 position, int lod)
         {
-            var origin = new Vector3(node.x, node.y, node.z) * size;
-            float currWidth = node.AxisLength;
-
-            var x1 = origin;
-            var x2 = origin + new Vector3(currWidth, 0f, 0f);
-            var x3 = origin + new Vector3(0f, currWidth, 0f);
-            var x4 = origin + new Vector3(currWidth, currWidth, 0f);
-
-            var x5 = origin + new Vector3(0f, 0f, currWidth);
-            var x6 = origin + new Vector3(currWidth, 0f, currWidth);
-            var x7 = origin + new Vector3(0f, currWidth, currWidth);
-            var x8 = origin + new Vector3(currWidth, currWidth, currWidth);
-
-            Handles.color = color;
-
-            Handles.DrawLine(x1, x2);
-            Handles.DrawLine(x1, x3);
-            Handles.DrawLine(x2, x4);
-            Handles.DrawLine(x3, x4);
-
-            Handles.DrawLine(x5, x6);
-            Handles.DrawLine(x5, x7);
-            Handles.DrawLine(x6, x8);
-            Handles.DrawLine(x7, x8);
-
-            Handles.DrawLine(x1, x5);
-            Handles.DrawLine(x2, x6);
-            Handles.DrawLine(x3, x7);
-            Handles.DrawLine(x4, x8);
+            return Search(root, position, lod);
         }
 
-        private void DrawLODS(Node node)
+        public List<Block> BlocksAtLod(int lod)
         {
-            if (node.depth == 0)
-            {
-                DrawNode(node, Color.white);
+            return blockLod[lod]; 
+        }
+
+        public Block GetNeighbour(Block block, Direction direction)
+        {
+            var blockPos = new Vector3(block.x, block.y, block.z);
+            var neightbourPos = (blockPos + VectorDirection[(int)direction]) * block.spacing;
+
+            return Search(neightbourPos, block.lod);
+        }
+
+        private void BuildTreeRecursive(Block block)
+        {
+            if (block.lod < 1)
                 return;
-            }
 
-            float o = node.AxisLength / 2f;
-            float a = Vector3.Distance(target.position, node.Centre);
-            float angle = Mathf.Rad2Deg * Mathf.Atan(o / a);
+            block.children = new Block[8];
+            int halfSize = (int)Mathf.Pow(2, block.lod) / 2;
 
-            if (angle < renderAngle)
-                DrawNode(node, Color.white);
-            else
+            block.children[0] = new Block(block.x, block.y, block.z, block.lod - 1, size, block.voxelObject);
+            block.children[1] = new Block(block.x + halfSize, block.y, block.z, block.lod - 1, size, block.voxelObject);
+            block.children[2] = new Block(block.x, block.y + halfSize, block.z, block.lod - 1, size, block.voxelObject);
+            block.children[3] = new Block(block.x + halfSize, block.y + halfSize, block.z, block.lod - 1, size, block.voxelObject);
+            block.children[4] = new Block(block.x, block.y, block.z + halfSize, block.lod - 1, size, block.voxelObject);
+            block.children[5] = new Block(block.x + halfSize, block.y, block.z + halfSize, block.lod - 1, size, block.voxelObject);
+            block.children[6] = new Block(block.x, block.y + halfSize, block.z + halfSize, block.lod - 1, size, block.voxelObject);
+            block.children[7] = new Block(block.x + halfSize, block.y + halfSize, block.z + halfSize, block.lod - 1, size, block.voxelObject);
+
+            foreach (var child in block.children)
             {
-                foreach (var child in node.children)
-                {
-                    DrawLODS(child);
-                }
+                Debug.Log($"blocks[{child.lod}]");
+                blockLod[child.lod].Add(child);
+                child.parent = block;
+                BuildTreeRecursive(child);
             }
         }
 
-        private void DrawTree(Node node, int depth)
+        private Block Search(Block block, Vector3 position, int lod)
         {
-            if (node == null)
+            if (block.lod == lod)
             {
-                return;
+                return block;
             }
 
-            if (node.depth == depth)
-            {
-                DrawNode(node, Color.red);
-            }
-            else
-            {
-                foreach (var child in node.children)
-                {
-                    DrawTree(child, depth);
-                }
-            }
-        }
-
-        private Node Search(Node node, Vector3 target, int depth)
-        {
-            if (node.depth == depth)
-            {
-                return node;
-            }
-
-            return Search(node.Search(target), target, depth);
-        }
-
-        private Node Search(Vector3 target, int depth)
-        {
-            return Search(root, target, depth);
-        }
-
-        // Testing only
-        public void OnDrawGizmos()
-        {
-            if (root == null)
-                BuildTree();
-            //TestDraw(Vector3.zero, depth);
-            //DrawTree(root);
-            DrawLODS(root);
+            return Search(block.Search(position), position, lod);
         }
     }
 }
